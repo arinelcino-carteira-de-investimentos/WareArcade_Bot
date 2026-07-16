@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: ware-arcade-game-bot
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python bot.py
+    healthCheckPath: /health
+    envVars:
+      - key: PAYMENT_PROVIDER
+        value: manual
+      - key: WEBHOOK_PATH
+        value: /webhook/pix
+      - key: AUTO_APPROVE_ON_PAID
+        value: "1"
+      - key: DB_PATH
+        value: /opt/data/warearcade.db
+    disk:
+      name: data
+      mountPath: /opt/data
+      sizeGB: 1
