@@ -1107,6 +1107,31 @@ async def button(update, context):
         pass
 
 # ============================================================
+# SERVIDORES E HEALTH CHECK PARA O RENDER
+# ============================================================
+
+import threading
+from http.server import HTTPServer, BaseHTTPRequestHandler
+
+class HealthCheckHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header("Content-type", "text/plain; charset=utf-8")
+        self.end_headers()
+        self.wfile.write(b"OK - WareArcadeBot is online!")
+
+    def log_message(self, format, *args):
+        pass  # Silencia logs repetitivos do Render health check
+
+def start_health_check_server(port):
+    try:
+        server = HTTPServer(("0.0.0.0", port), HealthCheckHandler)
+        print(f"🌐 Servidor HTTP para Render (/health) ativo na porta {port}")
+        server.serve_forever()
+    except Exception as e:
+        print(f"⚠️ Servidor HTTP: {e}")
+
+# ============================================================
 # MAIN - PONTO DE ENTRADA
 # ============================================================
 
@@ -1121,6 +1146,10 @@ def main():
     print(f"💚 PIX: {EMPRESA['pix']}")
     print("🚀 Bot iniciado e aguardando mensagens...")
     print("=" * 60)
+
+    # Inicia servidor HTTP em background para responder ao Render health check
+    t = threading.Thread(target=start_health_check_server, args=(PORT,), daemon=True)
+    t.start()
 
     # Cria a aplicação
     app = Application.builder().token(TOKEN).build()
@@ -1149,7 +1178,7 @@ def main():
             webhook_url=f"{WEBHOOK_URL}/webhook"
         )
     else:
-        print("📡 Modo Polling (desenvolvimento)")
+        print("📡 Modo Polling (desenvolvimento/produção contínua)")
         app.run_polling()
 
 # ===== ENTRY POINT =====
