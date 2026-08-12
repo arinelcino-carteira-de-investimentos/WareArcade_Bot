@@ -331,9 +331,11 @@ async def show_game_detail(update, context, game_id):
 
     if game.get("oferta", False) and preco_orig != preco:
         desconto = int((1 - preco / preco_orig) * 100)
-        preco_text = f"De R$ {preco_orig:.2f} por R$ {preco:.2f} ({desconto}% OFF)"
+        estoque_falso = (game_id % 3) + 1
+        preco_text = (f"De ~R$ {preco_orig:.2f}~ por *R$ {preco:.2f}* ({desconto}% OFF)\n"
+                      f"🚨 *ATENÇÃO: Restam apenas {estoque_falso} unidades!*")
     else:
-        preco_text = f"R$ {preco:.2f}"
+        preco_text = f"*R$ {preco:.2f}*"
 
     text = (
         f"🎮 *{nome}*\n\n"
@@ -398,7 +400,21 @@ async def show_cart(update, context):
         text += f"{i}. {item['nome']} - R$ {item['preco']:.2f}\n"
         keyboard.append([InlineKeyboardButton(f"❌ Remover #{i}", callback_data=f"remove_{i-1}")])
 
-    text += f"\n💰 *Total: R$ {total:.2f}*"
+    # --- LÓGICA DE UP-SELL (COMPRE JUNTO) ---
+    import random
+    upsell_text = ""
+    cart_nomes = [item['nome'] for item in cart]
+    # Pega ofertas que ainda não estão no carrinho
+    sugestoes = [g for g in get_offers() if g['nome'] not in cart_nomes]
+    
+    if sugestoes:
+        upsell = random.choice(sugestoes)
+        upsell_text = (f"\n\n🔥 *OFERTA RELÂMPAGO PARA VOCÊ:*\n"
+                       f"Que tal levar também *{upsell['nome']}* por apenas R$ {upsell['preco_oferta']:.2f}?")
+        # Botão de adicionar o upsell
+        keyboard.append([InlineKeyboardButton(f"➕ Adicionar {upsell['nome'][:15]}...", callback_data=f"add_cart_{upsell['id']}")])
+
+    text += f"\n💰 *Total da Compra: R$ {total:.2f}*{upsell_text}"
     keyboard.append([InlineKeyboardButton("💰 Finalizar Compra", callback_data="checkout")])
     keyboard.append([InlineKeyboardButton("🏠 Menu", callback_data="main_menu")])
 
@@ -406,6 +422,26 @@ async def show_cart(update, context):
         update.callback_query, context, text,
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
+
+async def notificar_carrinho_abandonado(context, chat_id, user_id, nome_produto):
+    await asyncio.sleep(3600)  # Espera 1 hora silenciosamente
+    context.user_data["cart_reminder_active"] = False
+    cart = db.get_cart(user_id)
+    if cart:  # Se ainda tiver itens, o cliente não pagou!
+        texto = (
+            f"🛒 *Opa! Você esqueceu algo no carrinho...*\n\n"
+            f"Vi que você separou o *{nome_produto}*, mas não finalizou a compra.\n"
+            f"As ofertas promocionais esgotam rápido! Quer finalizar agora e garantir o seu?"
+        )
+        try:
+            await context.bot.send_message(
+                chat_id=chat_id, 
+                text=texto, 
+                parse_mode=ParseMode.MARKDOWN,
+                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🛒 Voltar ao Carrinho", callback_data="cart")]])
+            )
+        except:
+            pass
 
 async def add_to_cart(update, context, game_id):
     """Adiciona produto ao carrinho"""
@@ -417,6 +453,12 @@ async def add_to_cart(update, context, game_id):
         return
 
     db.add_to_cart(user_id, game_id, game["nome"], game["preco_oferta"])
+
+    # Dispara a tarefa silenciosa de carrinho abandonado se não houver uma rodando
+    if not context.user_data.get("cart_reminder_active"):
+        context.user_data["cart_reminder_active"] = True
+        chat_id = update.callback_query.message.chat_id
+        asyncio.create_task(notificar_carrinho_abandonado(context, chat_id, user_id, game['nome']))
 
     await update.callback_query.answer(f"✅ {game['nome']} adicionado ao carrinho!")
 

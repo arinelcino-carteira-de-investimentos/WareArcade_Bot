@@ -988,17 +988,35 @@ def get_game_by_sku(sku):
             return g
     return None
 
+import difflib
+
 def search_games(query):
     if not query: return []
     q = query.lower().strip()
     out = []
+    
+    # 1. Busca Exata (Substring)
     for g in GAMES_CATALOG:
         if (q in g["nome"].lower()
             or q in (g.get("descricao") or "").lower()
             or q in g.get("tipo","").lower()
             or any(q in c.lower() for c in g.get("categorias",[]))
             or (g.get("sku") and q in g["sku"].lower())):
-            out.append(g)
+            if g not in out:
+                out.append(g)
+                
+    # 2. Busca Inteligente "Fuzzy" (À prova de erros ortográficos)
+    # Se achou pouco ou nenhum resultado, tenta achar nomes similares
+    if len(out) < 3:
+        nomes_catalogo = [g["nome"] for g in GAMES_CATALOG]
+        # Pega as 5 opções mais próximas com 40% ou mais de semelhança
+        melhores_matches = difflib.get_close_matches(query, nomes_catalogo, n=5, cutoff=0.4)
+        
+        for match in melhores_matches:
+            for g in GAMES_CATALOG:
+                if g["nome"] == match and g not in out:
+                    out.append(g)
+                    
     return out
 
 # ============================================================
