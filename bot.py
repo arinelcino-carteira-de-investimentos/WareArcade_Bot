@@ -117,19 +117,19 @@ async def safe_edit_or_send(query, context, text, parse_mode=ParseMode.MARKDOWN,
 def menu_principal():
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("📚 Ver Catálogo Completo", callback_data="catalog_0")],
-        [InlineKeyboardButton("🔥 Ofertas Imperdíveis", callback_data="offers_0"),
-         InlineKeyboardButton("🔍 Buscar Produto", callback_data="search")],
+        [InlineKeyboardButton("🔥 Ofertas Imperdíveis", callback_data="offers_0")],
         [InlineKeyboardButton("📂 Categorias", callback_data="categories"),
-         InlineKeyboardButton("🛒 Meu Carrinho", callback_data="cart")],
-        [InlineKeyboardButton("📦 Meus Pedidos", callback_data="my_orders"),
-         InlineKeyboardButton("👤 Meu Cadastro", callback_data="my_profile")],
-        [InlineKeyboardButton("🏛️ Institucional", callback_data="institutional"),
+         InlineKeyboardButton("🔍 Buscar", callback_data="search")],
+        [InlineKeyboardButton("🛒 Carrinho", callback_data="cart"),
+         InlineKeyboardButton("📦 Pedidos", callback_data="my_orders")],
+        [InlineKeyboardButton("👤 Cadastro", callback_data="my_profile"),
          InlineKeyboardButton("💬 Suporte", callback_data="support")],
+        [InlineKeyboardButton("🏛️ Institucional", callback_data="institutional")]
     ])
 
 def voltar_menu():
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("🏠 Menu Principal", callback_data="main_menu")]
+        [InlineKeyboardButton("🏠 Menu", callback_data="main_menu")]
     ])
 
 def catalog_keyboard(page, games, prefix="catalog"):
@@ -156,23 +156,25 @@ def catalog_keyboard(page, games, prefix="catalog"):
         nav_buttons.append(InlineKeyboardButton("➡️ Próximo", callback_data=f"{prefix}_{page + 1}"))
     keyboard.append(nav_buttons)
 
-    keyboard.append([InlineKeyboardButton("🔍 Buscar Produto", callback_data="search_product")])
-    keyboard.append([InlineKeyboardButton("🏠 Menu Principal", callback_data="main_menu")])
+    keyboard.append([
+        InlineKeyboardButton("🔍 Buscar", callback_data="search_product"),
+        InlineKeyboardButton("🏠 Menu", callback_data="main_menu")
+    ])
 
     return InlineKeyboardMarkup(keyboard)
 
 def game_detail_keyboard(game_id):
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("🛒 Adicionar ao Carrinho", callback_data=f"add_cart_{game_id}")],
-        [InlineKeyboardButton("⚡ Comprar Agora", callback_data=f"buy_now_{game_id}")],
-        [InlineKeyboardButton("🔙 Voltar ao Catálogo", callback_data="catalog_0")],
-        [InlineKeyboardButton("🏠 Menu", callback_data="main_menu")],
+        [InlineKeyboardButton("🛒 Adicionar", callback_data=f"add_cart_{game_id}"),
+         InlineKeyboardButton("⚡ Comprar", callback_data=f"buy_now_{game_id}")],
+        [InlineKeyboardButton("🔙 Voltar", callback_data="catalog_0"),
+         InlineKeyboardButton("🏠 Menu", callback_data="main_menu")],
     ])
 
 def payment_keyboard():
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("💚 PIX (Imediato)", callback_data="pay_pix")],
-        [InlineKeyboardButton("💳 Cartão de Crédito", callback_data="pay_cartao")],
+        [InlineKeyboardButton("💚 PIX", callback_data="pay_pix"),
+         InlineKeyboardButton("💳 Cartão", callback_data="pay_cartao")],
         [InlineKeyboardButton("❌ Cancelar", callback_data="main_menu")],
     ])
 
@@ -246,27 +248,34 @@ async def show_offers(update, context, page=0):
     )
 
 async def show_categories(update, context):
-    """Exibe categorias"""
-    text = (
-        "📂 *CATEGORIAS*\n\n"
-        "Escolha uma categoria:\n\n"
-        "🎮 Jogos PC (157)\n"
-        "🎓 Cursos (36)\n"
-        "🎨 Design (11)\n"
-        "🤖 IA - Ferramenta (11)\n"
-        "🔧 Ferramenta (9)\n"
-        "🖥️ Sistema (8)\n"
-        "🎬 Vídeo (8)\n"
-        "🔒 Segurança (8)\n"
-        "📄 Office (7)\n"
-        "📺 Streaming (7)\n"
-        "🏗️ Engenharia (6)\n"
-        "🎁 Gift Card (6)\n"
-        "🎵 Música (3)\n"
-        "☁️ Cloud (3)\n\n"
-        "📌 *Use /start para ver todos os produtos*"
+    """Exibe categorias (Dinâmico)"""
+    cat_counts = {}
+    for game in GAMES_CATALOG:
+        for cat in game.get("categorias", []):
+            cat_counts[cat] = cat_counts.get(cat, 0) + 1
+
+    sorted_cats = sorted(cat_counts.items(), key=lambda x: x[1], reverse=True)
+    
+    keyboard = []
+    row = []
+    for cat, count in sorted_cats[:20]: # Top 20
+        btn_text = f"📂 {cat} ({count})"
+        # Para caber nos 64 bytes do callback_data: limitamos o tamanho do nome
+        safe_cat = cat[:25]
+        row.append(InlineKeyboardButton(btn_text, callback_data=f"cat_{safe_cat}_0"))
+        if len(row) == 2:
+            keyboard.append(row)
+            row = []
+    if row:
+        keyboard.append(row)
+        
+    keyboard.append([InlineKeyboardButton("🏠 Menu Principal", callback_data="main_menu")])
+
+    await safe_edit_or_send(
+        update.callback_query, context,
+        "📂 *FILTRAR POR CATEGORIA*\n\nSelecione uma categoria abaixo:",
+        reply_markup=InlineKeyboardMarkup(keyboard)
     )
-    await safe_edit_or_send(update.callback_query, context, text, reply_markup=voltar_menu())
 
 async def search_product_click(update, context):
     """Inicia busca"""
@@ -1067,6 +1076,20 @@ async def button(update, context):
     # Categorias
     elif data == "categories":
         await show_categories(update, context)
+
+    elif data.startswith("cat_"):
+        parts = data.split("_")
+        page = int(parts[-1])
+        cat_name = "_".join(parts[1:-1])
+        
+        # Filtra jogos que tenham a categoria
+        results = [g for g in GAMES_CATALOG if any(cat_name in c for c in g.get("categorias", []))]
+        
+        await safe_edit_or_send(
+            query, context,
+            f"📂 *Categoria: {cat_name}*\n\nSelecione um produto:",
+            reply_markup=catalog_keyboard(page, results, prefix=f"cat_{cat_name}")
+        )
 
     # Detalhes do produto
     elif data.startswith("game_"):
