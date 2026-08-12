@@ -411,24 +411,56 @@ async def show_cart(update, context):
     )
 
 async def notificar_carrinho_abandonado(context, chat_id, user_id, nome_produto):
-    await asyncio.sleep(3600)  # Espera 1 hora silenciosamente
-    context.user_data["cart_reminder_active"] = False
+    # ==========================================
+    # GATILHO 1: Escassez (Após 30 minutos)
+    # ==========================================
+    await asyncio.sleep(1800)  
     cart = db.get_cart(user_id)
-    if cart:  # Se ainda tiver itens, o cliente não pagou!
-        texto = (
-            f"🛒 *Opa! Você esqueceu algo no carrinho...*\n\n"
-            f"Vi que você separou o *{nome_produto}*, mas não finalizou a compra.\n"
-            f"As ofertas promocionais esgotam rápido! Quer finalizar agora e garantir o seu?"
+    if not cart:
+        context.user_data["cart_reminder_active"] = False
+        return
+
+    texto_urgencia = (
+        f"🛒 *Opa! Você esqueceu algo no carrinho...*\n\n"
+        f"Vi que você separou o *{nome_produto}*, mas não finalizou a compra.\n"
+        f"🚨 *ATENÇÃO:* As ofertas promocionais esgotam rápido e seu carrinho será esvaziado em breve!\n\n"
+        f"Quer finalizar agora e garantir o seu?"
+    )
+    try:
+        await context.bot.send_message(
+            chat_id=chat_id, 
+            text=texto_urgencia, 
+            parse_mode=ParseMode.MARKDOWN,
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🛒 Voltar ao Carrinho", callback_data="cart")]])
         )
-        try:
-            await context.bot.send_message(
-                chat_id=chat_id, 
-                text=texto, 
-                parse_mode=ParseMode.MARKDOWN,
-                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🛒 Voltar ao Carrinho", callback_data="cart")]])
-            )
-        except:
-            pass
+    except:
+        pass
+
+    # ==========================================
+    # GATILHO 2: Oferta Irrecusável (Após + 1.5 horas = 2 horas total)
+    # ==========================================
+    await asyncio.sleep(5400)
+    cart = db.get_cart(user_id)
+    if not cart:
+        context.user_data["cart_reminder_active"] = False
+        return
+        
+    texto_oferta = (
+        f"🎁 *PRESENTE SURPRESA PARA VOCÊ!*\n\n"
+        f"Como você é um cliente especial, o chefe liberou um desconto secreto para você levar o *{nome_produto}* HOJE!\n\n"
+        f"💰 Mas seja rápido! Clique no botão abaixo para ver o desconto exclusivo direto no carrinho."
+    )
+    try:
+        await context.bot.send_message(
+            chat_id=chat_id, 
+            text=texto_oferta, 
+            parse_mode=ParseMode.MARKDOWN,
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔥 Pegar Meu Desconto VIP", callback_data="cart_desconto_vip")]])
+        )
+    except:
+        pass
+        
+    context.user_data["cart_reminder_active"] = False
 
 async def add_to_cart(update, context, game_id):
     """Adiciona produto ao carrinho"""
@@ -1156,6 +1188,19 @@ async def button(update, context):
 
     elif data == "checkout":
         await start_checkout(update, context)
+        
+    elif data == "cart_desconto_vip":
+        user_id = update.callback_query.from_user.id
+        cart = db.get_cart(user_id)
+        
+        # Limpa o carrinho e readiciona os itens com 10% de desconto
+        db.clear_cart(user_id)
+        for item in cart:
+            novo_preco = item["preco"] * 0.90 # 10% de desconto
+            db.add_to_cart(user_id, item["id"], f"{item['nome']} (VIP 10% OFF)", novo_preco)
+            
+        await update.callback_query.answer("🎉 Desconto de 10% aplicado com sucesso!")
+        await show_cart(update, context)
 
     # Pagamento
     elif data.startswith("pay_"):
