@@ -1,0 +1,15 @@
+# ===== TOKEN DO BOT =====
+TELEGRAM_BOT_TOKEN=SEU_TOKEN_AQUI
+
+# ===== ADMIN =====
+ADMIN_CHAT_IDS=123456789
+
+# ===== PORTA =====
+PORT=8080
+
+# ===== WEBHOOK (opcional - para produção) =====
+# WEBHOOK_URL=https://seu-dominio.render.com
+
+# ===== DOWNLOADS =====
+DOWNLOAD_BASE_URL=https://warearcadebot.com.br/download/
+DOWNLOAD_LINK_EXPIRY_HOURS=48

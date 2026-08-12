@@ -1,0 +1,7 @@
+WareArcadeBot/
+├── bot.py          # Código principal do bot
+├── catalog.py      # Catálogo com 321 produtos
+├── config.py       # Configurações
+├── requirements.txt # Dependências
+├── .env            # Variáveis de ambiente
+└── Dockerfile      # Para deploy na Render
