@@ -108,13 +108,44 @@ async def consultar_pagamento_mercadopago(payment_id: str):
             return await r.json()
 
 
+# ===================== SYNC PAY =====================
+async def criar_cobranca_syncpay(codigo_pedido: str, valor: float, descricao: str = "Pedido WareArcade"):
+    """Cria um PIX via Sync Pay Pagamentos LTDA."""
+    token = os.getenv("SYNCPAY_TOKEN", "").strip()
+    if not token:
+        raise RuntimeError("SYNCPAY_TOKEN não configurado")
+
+    # Substitua pela URL real da documentação da Sync Pay
+    url = "https://api.syncpay.com.br/v1/pix" 
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json"
+    }
+    body = {
+        "value": round(float(valor), 2),
+        "description": f"{descricao} - {codigo_pedido}",
+        "external_id": codigo_pedido,
+        "webhook_url": PUBLIC_WEBHOOK_URL
+    }
+    
+    async with aiohttp.ClientSession() as s:
+        async with s.post(url, json=body, headers=headers, timeout=15) as r:
+            data = await r.json()
+            if r.status >= 400:
+                log.error("Erro ao criar PIX Sync Pay: %s", data)
+                raise RuntimeError(f"Erro Sync Pay {r.status}: {data}")
+                
+    return {
+        "payment_id": str(data.get("id")),
+        "qr_code_copia_cola": data.get("pix_copia_cola", ""),
+        "qr_code": data.get("qr_code_base64", "")
+    }
+
 # ===================== GERAR QR CODE PARA ENVIO =====================
 async def gerar_qr_para_pedido(codigo_pedido: str, valor: float):
     """
     Gera o QR que será enviado ao cliente.
-    - Se PROVIDER == mercadopago -> usa QR do MP (pagamento automático).
-    - Caso contrário -> gera o QR PIX estático local (confirmação via botão 'Já Paguei').
-    Retorna dict com buffer/codigo pix e metadados de pagamento.
+    Suporta: mercadopago, syncpay e manual.
     """
     meta = {
         "provider": PROVIDER,
@@ -124,7 +155,21 @@ async def gerar_qr_para_pedido(codigo_pedido: str, valor: float):
         "qr_base64": None,
     }
 
-    if PROVIDER == "mercadopago" and MP_TOKEN:
+    if PROVIDER == "syncpay":
+        try:
+            sp = await criar_cobranca_syncpay(codigo_pedido, valor)
+            meta["payment_id"] = sp["payment_id"]
+            meta["qr_code_copia_cola"] = sp["qr_code_copia_cola"]
+            meta["qr_base64"] = sp["qr_code"]
+            meta["usar_qr_mp_base64"] = bool(sp["qr_code"])
+            buffer, codigo = generate_qr_code_pix_com_texto(sp["qr_code_copia_cola"] or EMPRESA["pix"])
+            meta["buffer"] = buffer
+            meta["codigo_pix"] = codigo
+            return meta
+        except Exception as e:
+            log.warning("Falha na Sync Pay, usando QR local: %s", e)
+
+    elif PROVIDER == "mercadopago" and MP_TOKEN:
         try:
             mp = await criar_cobranca_mercadopago(codigo_pedido, valor)
             meta["payment_id"] = mp["payment_id"]
