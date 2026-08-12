@@ -267,12 +267,33 @@ async def handle_webhook(request: web.Request):
         return web.json_response({"ok": False, "erro": str(e)}, status=500)
 
 
+async def api_stats(request: web.Request):
+    import database as db
+    try:
+        pedidos = db.listar_pedidos_por_status("aprovado")
+        total_revenue = sum(p["total"] for p in pedidos)
+        
+        # Mock de novos clientes para o dashboard
+        cadastros = len(db.cadastros_mem) if hasattr(db, "cadastros_mem") else 0
+        
+        headers = {"Access-Control-Allow-Origin": "*"}
+        return web.json_response({
+            "total_sales": len(pedidos),
+            "total_revenue": total_revenue,
+            "total_customers": cadastros,
+            "recent_orders": pedidos[-10:] if pedidos else []
+        }, headers=headers)
+    except Exception as e:
+        return web.json_response({"error": str(e)}, status=500, headers={"Access-Control-Allow-Origin": "*"})
+
 async def start_webhook_server():
-    """Inicia (em background) o servidor HTTP aiohttp para responder health checks e webhooks."""
+    """Inicia (em background) o servidor HTTP aiohttp para responder health checks, webhooks e API do Dashboard."""
     app = web.Application()
     app.router.add_post(WEBHOOK_PATH, handle_webhook)
-    app.router.add_get("/", lambda r: web.json_response({"status": "ok", "service": "WareArcadeBot"}))
-    app.router.add_get("/health", lambda r: web.json_response({"ok": True, "provider": PROVIDER}))
+    app.router.add_get("/", lambda r: web.json_response({"status": "ok", "service": "WareArcadeBot"}, headers={"Access-Control-Allow-Origin": "*"}))
+    app.router.add_get("/health", lambda r: web.json_response({"ok": True, "provider": PROVIDER}, headers={"Access-Control-Allow-Origin": "*"}))
+    app.router.add_get("/api/stats", api_stats)
+    
     runner = web.AppRunner(app)
     await runner.setup()
     site = web.TCPSite(runner, "0.0.0.0", WEBHOOK_PORT)
