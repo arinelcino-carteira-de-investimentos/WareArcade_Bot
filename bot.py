@@ -820,8 +820,12 @@ async def show_institutional(update, context):
 async def show_support(update, context):
     """Exibe suporte VIP e links sociais"""
     import urllib.parse
-    
-    wa_msg = "Olá, Equipe VIP! 💎 Acabei de vir do Bot da Loja e gostaria de um atendimento exclusivo. Podem me ajudar a encontrar a melhor solução?"
+    wa_msg = (
+        "🚀 *Olá, Equipe de Elite!*\n\n"
+        "Acabei de acessar o catálogo VIP pelo Bot 🤖 e exijo o meu atendimento prioritário! 🌟\n\n"
+        "Tenho interesse em conhecer os bastidores, acessar os *descontos secretos* 🤫 e garantir a melhor solução para mim hoje.\n\n"
+        "Vocês estão disponíveis? 💳🔥"
+    )
     wa_link = f"https://wa.me/{STORE_WHATSAPP.replace('+', '')}?text={urllib.parse.quote(wa_msg)}"
 
     text = (
