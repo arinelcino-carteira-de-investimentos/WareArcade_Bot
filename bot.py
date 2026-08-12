@@ -1169,17 +1169,8 @@ def main():
     app.add_handler(CommandHandler("liberar", cmd_liberar))
 
     # ===== MODO DE EXECUÇÃO =====
-    if WEBHOOK_URL:
-        print(f"✅ Webhook configurado: {WEBHOOK_URL}/webhook na porta {PORT}")
-        app.run_webhook(
-            listen="0.0.0.0",
-            port=PORT,
-            url_path="webhook",
-            webhook_url=f"{WEBHOOK_URL}/webhook"
-        )
-    else:
-        print("📡 Modo Polling (desenvolvimento/produção contínua)")
-        app.run_polling()
+    print("📡 Modo Polling Ativo - Limpando conexões anteriores para resposta imediata...")
+    app.run_polling(drop_pending_updates=True)
 
 # ===== ENTRY POINT =====
 if __name__ == "__main__":
