@@ -189,20 +189,20 @@ async def start(update, context):
     ofertas = get_total_ofertas()
 
     welcome = (
-        f"🏪 *{STORE_NAME}*\n\n"
-        f"🌟 Olá, *{user.first_name}*! Seja muito bem-vindo(a)!\n\n"
-        f"💎 *EXPLORE NOSSO CATÁLOGO PREMIUM*\n"
-        f"Temos *{total} produtos* de alto nível aguardando você, incluindo softwares essenciais, super lançamentos e ferramentas de ponta.\n\n"
-        f"🔥 *OFERTAS ESPECIAIS:*\n"
-        f"Existem hoje *{ofertas} produtos* com descontos limitados.\n\n"
-        f"🚀 *NOSSOS DIFERENCIAIS:*\n"
+        f"🏪 {STORE_NAME}\n\n"
+        f"🌟 Olá, {user.first_name}! Seja muito bem-vindo(a)!\n\n"
+        f"💎 EXPLORE NOSSO CATÁLOGO PREMIUM\n"
+        f"Temos {total} produtos de alto nível aguardando você, incluindo softwares essenciais, super lançamentos e ferramentas de ponta.\n\n"
+        f"🔥 OFERTAS ESPECIAIS:\n"
+        f"Existem hoje {ofertas} produtos com descontos limitados.\n\n"
+        f"🚀 NOSSOS DIFERENCIAIS:\n"
         f"✅ Entrega Automática Imediata\n"
         f"✅ Catálogo 100% Original e Seguro\n"
         f"✅ Central de Concierge VIP\n\n"
-        f"💸 *FORMAS DE PAGAMENTO:*\n"
+        f"💸 FORMAS DE PAGAMENTO:\n"
         f"💚 PIX (Aprovação na hora)\n"
         f"💳 Cartão de Crédito ou Boleto\n\n"
-        f"👇 *Selecione uma opção abaixo para começar:*"
+        f"👇 Selecione uma opção abaixo para começar:"
     )
 
     if update.message:
@@ -808,27 +808,27 @@ async def show_support(update, context):
     """Exibe suporte VIP e links sociais"""
     import urllib.parse
     wa_msg = (
-        "🚀 *Olá, Equipe de Elite!*\n\n"
+        "🚀 Olá, Equipe de Elite!\n\n"
         "Acabei de acessar o catálogo VIP pelo Bot 🤖 e exijo o meu atendimento prioritário! 🌟\n\n"
-        "Tenho interesse em conhecer os bastidores, acessar os *descontos secretos* 🤫 e garantir a melhor solução para mim hoje.\n\n"
+        "Tenho interesse em conhecer os bastidores, acessar os descontos secretos 🤫 e garantir a melhor solução para mim hoje.\n\n"
         "Vocês estão disponíveis? 💳🔥"
     )
     wa_link = f"https://wa.me/{STORE_WHATSAPP.replace('+', '')}?text={urllib.parse.quote(wa_msg)}"
 
     text = (
-        "👑 *CENTRAL DE CONCIERGE VIP*\n"
+        "👑 CENTRAL DE CONCIERGE VIP\n"
         "━━━━━━━━━━━━━━━━━━━━━━\n\n"
         "Você acaba de acessar o canal mais exclusivo da nossa operação. "
-        "Não temos 'atendentes', temos *Especialistas de Elite* prontos para blindar sua compra e entregar a melhor experiência do mercado! 🚀⚡\n\n"
-        "🔥 *Benefícios de Falar com a Gente:*\n"
+        "Não temos 'atendentes', temos Especialistas de Elite prontos para blindar sua compra e entregar a melhor experiência do mercado! 🚀⚡\n\n"
+        "🔥 Benefícios de Falar com a Gente:\n"
         "💠 Acesso a Ofertas Secretas Privadas\n"
         "💠 Recomendações sob medida para você\n"
         "💠 Suporte Técnico Ultra-Rápido (SLA 30min)\n\n"
-        "🛎️ *Seus Canais de Elite:*\n"
-        f"🟢 *WhatsApp:* Canal direto com a nossa diretoria de vendas. Clique abaixo para prioridade máxima.\n"
-        f"🌌 *Instagram:* `{STORE_INSTAGRAM}` — Siga para desbloquear Sorteios Relâmpago e Cupons Invisíveis! 💎\n\n"
+        "🛎️ Seus Canais de Elite:\n"
+        f"🟢 WhatsApp: Canal direto com a nossa diretoria de vendas. Clique abaixo para prioridade máxima.\n"
+        f"🌌 Instagram: {STORE_INSTAGRAM} — Siga para desbloquear Sorteios Relâmpago e Cupons Invisíveis! 💎\n\n"
         "━━━━━━━━━━━━━━━━━━━━━━\n"
-        "⌛ *Nossa equipe está online AGORA.*\n"
+        "⌛ Nossa equipe está online AGORA.\n"
         "Toque no botão abaixo e sinta a diferença de um atendimento Premium. 👇"
     )
 
