@@ -116,15 +116,15 @@ async def safe_edit_or_send(query, context, text, parse_mode=ParseMode.MARKDOWN,
 
 def menu_principal():
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("📚 Ver Catálogo Completo", callback_data="catalog_0")],
-        [InlineKeyboardButton("🔥 Ofertas Imperdíveis", callback_data="offers_0")],
+        [InlineKeyboardButton("📚 Ver Catálogo", callback_data="catalog_0"),
+         InlineKeyboardButton("🔥 Ofertas", callback_data="offers_0")],
         [InlineKeyboardButton("📂 Categorias", callback_data="categories"),
          InlineKeyboardButton("🔍 Buscar", callback_data="search")],
         [InlineKeyboardButton("🛒 Carrinho", callback_data="cart"),
          InlineKeyboardButton("📦 Pedidos", callback_data="my_orders")],
         [InlineKeyboardButton("👤 Cadastro", callback_data="my_profile"),
-         InlineKeyboardButton("💬 Suporte", callback_data="support")],
-        [InlineKeyboardButton("🏛️ Institucional", callback_data="institutional")]
+         InlineKeyboardButton("💬 Suporte VIP", callback_data="support")],
+        [InlineKeyboardButton("🏛️ Conheça a Loja (Site)", callback_data="institutional")]
     ])
 
 def voltar_menu():
@@ -190,32 +190,19 @@ async def start(update, context):
 
     welcome = (
         f"🏪 *{STORE_NAME}*\n\n"
-        f"Olá, *{user.first_name}*! 😊\n\n"
-        f"## CATÁLOGO COMPLETO - {total} PRODUTOS\n\n"
-        f"- 🎮 Jogos ...... 157\n"
-        f"- 🎓 Cursos ...... 36\n"
-        f"- 🎨 Design ...... 11\n"
-        f"- 🤖 IA ...... 40\n"
-        f"- 🔧 Ferramentas ...... 20\n"
-        f"- 🖥️ Sistemas ...... 8\n"
-        f"- 🎬 Vídeo ...... 8\n"
-        f"- 🔒 Segurança ...... 8\n"
-        f"- 📄 Office ...... 7\n"
-        f"- 📺 Streaming ...... 7\n"
-        f"- 🏗️ Engenharia ...... 6\n"
-        f"- 🎁 Gift Cards ...... 6\n"
-        f"- 🎵 Música ...... 3\n"
-        f"- ☁️ Cloud ...... 3\n"
-        f"- 🧪 Teste ...... 1\n\n"
-        f"---\n\n"
-        f"## INFORMAÇÕES:\n"
-        f"- 📦 Total: {total} produtos\n"
-        f"- 🔥 Em oferta: {ofertas} produtos\n"
-        f"- 💰 Faixa: R$ 1.50 a R$ 499.90\n\n"
-        f"---\n\n"
-        f"### ⚡ Entrega imediata | 🔒 100% Seguro\n"
-        f"- 💚 PIX | 💳 Cartão | 📄 Boleto\n\n"
-        f"## Escolha uma opção:"
+        f"🌟 Olá, *{user.first_name}*! Seja muito bem-vindo(a)!\n\n"
+        f"💎 *EXPLORE NOSSO CATÁLOGO PREMIUM*\n"
+        f"Temos *{total} produtos* de alto nível aguardando você, incluindo softwares essenciais, super lançamentos e ferramentas de ponta.\n\n"
+        f"🔥 *OFERTAS ESPECIAIS:*\n"
+        f"Existem hoje *{ofertas} produtos* com descontos limitados.\n\n"
+        f"🚀 *NOSSOS DIFERENCIAIS:*\n"
+        f"✅ Entrega Automática Imediata\n"
+        f"✅ Catálogo 100% Original e Seguro\n"
+        f"✅ Central de Concierge VIP\n\n"
+        f"💸 *FORMAS DE PAGAMENTO:*\n"
+        f"💚 PIX (Aprovação na hora)\n"
+        f"💳 Cartão de Crédito ou Boleto\n\n"
+        f"👇 *Selecione uma opção abaixo para começar:*"
     )
 
     if update.message:
