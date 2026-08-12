@@ -223,10 +223,7 @@ async def handle_webhook(request: web.Request):
 
 
 async def start_webhook_server():
-    """Inicia (em background) o servidor HTTP aiohttp para receber webhooks."""
-    if PROVIDER == "manual":
-        log.info("⚙️ Pagamento em MODO MANUAL (sem webhook).")
-        return None
+    """Inicia (em background) o servidor HTTP aiohttp para responder health checks e webhooks."""
     app = web.Application()
     app.router.add_post(WEBHOOK_PATH, handle_webhook)
     app.router.add_get("/", lambda r: web.json_response({"status": "ok", "service": "WareArcadeBot"}))
@@ -235,7 +232,7 @@ async def start_webhook_server():
     await runner.setup()
     site = web.TCPSite(runner, "0.0.0.0", WEBHOOK_PORT)
     await site.start()
-    log.info(f"🌐 Webhook PIX rodando em 0.0.0.0:{WEBHOOK_PORT}{WEBHOOK_PATH} (provider={PROVIDER})")
+    log.info(f"🌐 Servidor HTTP/Webhook rodando em 0.0.0.0:{WEBHOOK_PORT}{WEBHOOK_PATH} (provider={PROVIDER})")
     return runner
 
 

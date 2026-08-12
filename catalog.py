@@ -984,6 +984,15 @@ def games_by_categoria(categoria):
 def games_by_tipo(tipo):
     return TIPOS.get(tipo,[])
 
+def get_games_by_category(category):
+    return games_by_categoria(category)
+
+def get_total_produtos():
+    return len(GAMES_CATALOG)
+
+def get_total_ofertas():
+    return len(get_offers())
+
 print(f"[catalog.py] ✅ Catálogo MESTRE carregado: {len(GAMES_CATALOG)} produtos "
       f"em {len(TIPOS)} tipos / {len(CATEGORIAS)} categorias.")
 
