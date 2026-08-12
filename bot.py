@@ -818,23 +818,33 @@ async def show_institutional(update, context):
     await safe_edit_or_send(update.callback_query, context, text, reply_markup=voltar_menu())
 
 async def show_support(update, context):
-    """Exibe suporte"""
+    """Exibe suporte VIP e links sociais"""
+    import urllib.parse
+    
+    wa_msg = "Olá, Equipe VIP! 💎 Acabei de vir do Bot da Loja e gostaria de um atendimento exclusivo. Podem me ajudar a encontrar a melhor solução?"
+    wa_link = f"https://wa.me/{STORE_WHATSAPP.replace('+', '')}?text={urllib.parse.quote(wa_msg)}"
+
     text = (
-        "💬 *SUPORTE AO CLIENTE*\n\n"
-        f"🏪 *{STORE_NAME}*\n\n"
-        "*Fale conosco:*\n\n"
-        f"📱 WhatsApp: {STORE_WHATSAPP}\n"
-        f"📧 Email: {STORE_EMAIL}\n"
-        f"📸 Instagram: {STORE_INSTAGRAM}\n"
-        f"🕐 Horário: {STORE_HOURS}\n\n"
-        "💚 *Atendimento humanizado!*\n"
-        "Respondemos em até 30 minutos."
+        "👑 *CENTRAL DE CONCIERGE VIP*\n"
+        "━━━━━━━━━━━━━━━━━━━━━━\n\n"
+        "Você acaba de acessar o canal mais exclusivo da nossa operação. "
+        "Não temos 'atendentes', temos *Especialistas de Elite* prontos para blindar sua compra e entregar a melhor experiência do mercado! 🚀⚡\n\n"
+        "🔥 *Benefícios de Falar com a Gente:*\n"
+        "💠 Acesso a Ofertas Secretas Privadas\n"
+        "💠 Recomendações sob medida para você\n"
+        "💠 Suporte Técnico Ultra-Rápido (SLA 30min)\n\n"
+        "🛎️ *Seus Canais de Elite:*\n"
+        f"🟢 *WhatsApp:* Canal direto com a nossa diretoria de vendas. Clique abaixo para prioridade máxima.\n"
+        f"🌌 *Instagram:* `{STORE_INSTAGRAM}` — Siga para desbloquear Sorteios Relâmpago e Cupons Invisíveis! 💎\n\n"
+        "━━━━━━━━━━━━━━━━━━━━━━\n"
+        "⌛ *Nossa equipe está online AGORA.*\n"
+        "Toque no botão abaixo e sinta a diferença de um atendimento Premium. 👇"
     )
 
     keyboard = [
-        [InlineKeyboardButton("💬 Chamar no WhatsApp", url=f"https://wa.me/{STORE_WHATSAPP.replace('+', '')}")],
-        [InlineKeyboardButton("📸 Seguir no Instagram", url="https://instagram.com/warearcadebot")],
-        [InlineKeyboardButton("🏠 Menu", callback_data="main_menu")]
+        [InlineKeyboardButton("💎 Falar no WhatsApp (VIP)", url=wa_link)],
+        [InlineKeyboardButton("🌌 Desbloquear Cupons no Instagram", url="https://instagram.com/warearcadebot")],
+        [InlineKeyboardButton("🏠 Voltar ao Menu", callback_data="main_menu")]
     ]
 
     if update.callback_query:
