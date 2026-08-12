@@ -244,7 +244,7 @@ _IMG_BY_TYPE = {
     "☁️ Cloud":     "https://upload.wikimedia.org/wikipedia/commons/c/c6/Google_One_logo.svg",
     "🧪 Teste":     "https://cdn.akamai.steamstatic.com/steam/apps/440/header.jpg",
     "💼 Produtividade":"https://upload.wikimedia.org/wikipedia/commons/3/35/Microsoft_365_%282022%29.svg",
-    "🎮 Jogo":      "https://cdn-icons-png.flaticon.com/512/686/686589.png",
+    "🎮 Jogo":      "https://upload.wikimedia.org/wikipedia/commons/f/f9/Xbox_one_logo.svg",
     "🎓 Curso":     "https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/Graduation_hat.svg/240px-Graduation_hat.svg.png",
     "🤖 IA - Vídeo":      "https://upload.wikimedia.org/wikipedia/commons/4/4f/Runway_ml_logo.png",
     "🤖 IA - Texto":      "https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg",
@@ -254,7 +254,7 @@ _IMG_BY_TYPE = {
     "🤖 IA - Produtividade":"https://upload.wikimedia.org/wikipedia/commons/4/45/Notion_app_logo.png",
     "🤖 IA - Marketing":  "https://upload.wikimedia.org/wikipedia/commons/8/86/Semrush-logo.png",
     "🤖 IA - Código":     "https://upload.wikimedia.org/wikipedia/commons/6/61/GitHub_Copilot_logo.svg",
-    "🤖 IA - Ferramenta": "https://cdn-icons-png.flaticon.com/512/10038/10038135.png",
+    "🤖 IA - Ferramenta": "https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg",
     "🤖 IA Plano":        "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/Artificial_intelligence_icon.svg/240px-Artificial_intelligence_icon.svg.png",
     "📈 Finanças":        "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c8/Money_font_awesome.svg/240px-Money_font_awesome.svg.png",
     "📱 Mobile":          "https://upload.wikimedia.org/wikipedia/commons/thumb/6/64/Android_logo_2019_%28stacked%29.svg/240px-Android_logo_2019_%28stacked%29.svg.png",
@@ -319,7 +319,7 @@ _IMG_SPECIFIC = {
     "CCleaner":             "https://upload.wikimedia.org/wikipedia/commons/5/55/CCleaner-Logo.svg",
     "IDM":                  "https://upload.wikimedia.org/wikipedia/commons/e/e8/Internet_Download_Manager_logo.png",
     "Nero":                 "https://upload.wikimedia.org/wikipedia/commons/6/65/Nero_AG_logo.png",
-    "WinUtilities":         "https://cdn-icons-png.flaticon.com/512/2920/2920303.png",
+    "WinUtilities":         "https://upload.wikimedia.org/wikipedia/commons/0/0c/Windows_logo_-_2012.svg",
     "UltraEdit":            "https://www.ultraedit.com/wp-content/uploads/2018/04/cropped-ultraedit-favicon-180x180.png",
     "VMware":               "https://upload.wikimedia.org/wikipedia/commons/4/4a/VMware_worksation_icon.png",
     "Rufus":                "https://upload.wikimedia.org/wikipedia/commons/3/3e/Rufus-3.21-icon.png",
@@ -407,9 +407,9 @@ def _find_image(g):
     if "Curso" in t:
         return _IMG_BY_TYPE["🎓 Curso"]
     if "IA" in t:
-        return "https://cdn-icons-png.flaticon.com/512/10038/10038135.png"
+        return _IMG_BY_TYPE.get("🤖 IA - Ferramenta", "https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg")
     # 7) Fallback generico
-    return "https://cdn-icons-png.flaticon.com/512/1170/1170679.png"
+    return "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Box_icon_%28green%29.svg/512px-Box_icon_%28green%29.svg.png"
 
 # ============================================================
 # 1) PRODUTOS ORIGINAIS (seu catalogo antigo com IDs e imagens preservados)
@@ -811,7 +811,7 @@ for nome, po, porig, desc, appid in _JOGOS_EXTRAS:
     # evita duplica
     if any(nome.lower() in g["nome"].lower() or g["nome"].lower() in nome.lower() for g in GAMES_CATALOG if g.get("tipo") == "🎮 Jogo"):
         continue
-    img = _IMG_STEAM.format(appid=appid) if appid else "https://cdn-icons-png.flaticon.com/512/686/686589.png"
+    img = _IMG_STEAM.format(appid=appid) if appid else "https://upload.wikimedia.org/wikipedia/commons/f/f9/Xbox_one_logo.svg"
     # ajusta logos que não são steam
     if "Minecraft" in nome: img = "https://upload.wikimedia.org/wikipedia/commons/6/68/Minecraft_2024.png"
     if "Valorant" in nome: img = "https://upload.wikimedia.org/wikipedia/commons/f/fc/Valorant_logo_-_pink_color_version.svg"
@@ -1000,6 +1000,16 @@ def search_games(query):
             or (g.get("sku") and q in g["sku"].lower())):
             out.append(g)
     return out
+
+# ============================================================
+# MODIFICADOR GLOBAL DE PREÇOS (Reajuste de +10% e final .97)
+# ============================================================
+for _g in GAMES_CATALOG:
+    if "preco_original" in _g and isinstance(_g["preco_original"], (int, float)):
+        # Calcula +10%, pega a parte inteira e crava o .97
+        _g["preco_original"] = float(int(_g["preco_original"] * 1.10)) + 0.97
+    if "preco_oferta" in _g and isinstance(_g["preco_oferta"], (int, float)):
+        _g["preco_oferta"] = float(int(_g["preco_oferta"] * 1.10)) + 0.97
 
 def get_offers():
     return [g for g in GAMES_CATALOG if g.get("oferta",False)]
