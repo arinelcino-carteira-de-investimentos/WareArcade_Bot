@@ -1,0 +1,555 @@
+/* ============================================================
+   NEXUS DIGITAL SHOP — Sistema Visual Premium
+   ============================================================
+   • Animação neon circulando nas bordas dos botões
+   • Fade-in/out suave em todas as transições
+   • Cores suaves com gradientes de alta qualidade
+   • Glassmorphism e micro-interações
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* ─── Variáveis Globais ─── */
+:root {
+  --nexus-bg:         #07090c;
+  --nexus-surface:    #0e1117;
+  --nexus-card:       #12161d;
+  --nexus-card-hover: #171c25;
+  --nexus-border:     rgba(255, 255, 255, 0.06);
+  --nexus-border-hover: rgba(255, 255, 255, 0.12);
+
+  /* Cores Neon (suaves) */
+  --neon-cyan:   #22d3ee;
+  --neon-green:  #34d399;
+  --neon-purple: #a78bfa;
+  --neon-pink:   #f472b6;
+  --neon-amber:  #fbbf24;
+
+  /* Cor primária do tema */
+  --primary:       #34d399;
+  --primary-muted: rgba(52, 211, 153, 0.15);
+  --primary-glow:  rgba(52, 211, 153, 0.25);
+
+  /* Tipografia */
+  --font-main: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+/* ─── Reset & Base ─── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-main);
+  background: var(--nexus-bg);
+  color: #e2e8f0;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* ─── Scrollbar Premium ─── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--nexus-bg); }
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--neon-green), var(--neon-cyan));
+  border-radius: 8px;
+}
+
+/* ============================================================
+   ANIMAÇÕES — Keyframes
+   ============================================================ */
+
+/* Fade In de baixo para cima */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Fade In simples */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Fade Out */
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+/* Escala suave ao aparecer */
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ★ Neon circulando na borda — conic gradient que rotaciona */
+@keyframes neonSpin {
+  0%   { --neon-angle: 0deg; }
+  100% { --neon-angle: 360deg; }
+}
+
+@property --neon-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+/* Pulso suave do glow */
+@keyframes glowPulse {
+  0%, 100% { opacity: 0.4; }
+  50%      { opacity: 0.8; }
+}
+
+/* Shimmer (brilho passando) */
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+/* Floating sutil */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-4px); }
+}
+
+/* Breathing glow */
+@keyframes breathe {
+  0%, 100% { box-shadow: 0 0 12px rgba(52, 211, 153, 0.1); }
+  50%      { box-shadow: 0 0 24px rgba(52, 211, 153, 0.25); }
+}
+
+/* ============================================================
+   CLASSES DE ANIMAÇÃO
+   ============================================================ */
+
+.nexus-fade-in {
+  animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.nexus-fade-in-delay-1 { animation-delay: 0.08s; }
+.nexus-fade-in-delay-2 { animation-delay: 0.16s; }
+.nexus-fade-in-delay-3 { animation-delay: 0.24s; }
+.nexus-fade-in-delay-4 { animation-delay: 0.32s; }
+.nexus-fade-in-delay-5 { animation-delay: 0.4s; }
+.nexus-fade-in-delay-6 { animation-delay: 0.48s; }
+.nexus-fade-in-delay-7 { animation-delay: 0.56s; }
+.nexus-fade-in-delay-8 { animation-delay: 0.64s; }
+
+.nexus-scale-in {
+  animation: scaleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ============================================================
+   ★ BOTÃO COM NEON BORDER ANIMADO ★
+   ============================================================
+   Usa um pseudo-element com conic-gradient animado
+   que cria o efeito de luz circulando na borda.
+   ============================================================ */
+
+.nexus-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 18px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #e2e8f0;
+  background: var(--nexus-card);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  overflow: hidden;
+  z-index: 1;
+  white-space: nowrap;
+}
+
+/* Camada de borda neon animada */
+.nexus-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+  padding: 1.5px;
+  background: conic-gradient(
+    from var(--neon-angle, 0deg),
+    transparent 0%,
+    var(--neon-green) 10%,
+    var(--neon-cyan) 20%,
+    transparent 40%,
+    transparent 60%,
+    var(--neon-purple) 80%,
+    var(--neon-green) 90%,
+    transparent 100%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: neonSpin 3s linear infinite;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+/* Hover: ativa o neon */
+.nexus-btn:hover::before {
+  opacity: 1;
+}
+
+/* Glow no hover */
+.nexus-btn:hover {
+  background: var(--nexus-card-hover);
+  box-shadow: 0 0 20px rgba(52, 211, 153, 0.12), 0 0 40px rgba(34, 211, 238, 0.06);
+  transform: translateY(-1px);
+}
+
+/* Active */
+.nexus-btn:active {
+  transform: translateY(0) scale(0.97);
+}
+
+/* ─── Variante: Neon SEMPRE ATIVO ─── */
+.nexus-btn-active::before {
+  opacity: 1 !important;
+}
+
+.nexus-btn-active {
+  background: rgba(52, 211, 153, 0.08);
+  color: var(--neon-green);
+  box-shadow: 0 0 16px rgba(52, 211, 153, 0.1);
+}
+
+/* ─── Variante: Primário (preenchido) ─── */
+.nexus-btn-primary {
+  background: linear-gradient(135deg, #059669, #10b981);
+  color: #000;
+  font-weight: 600;
+}
+
+.nexus-btn-primary::before {
+  background: conic-gradient(
+    from var(--neon-angle, 0deg),
+    transparent 0%,
+    #6ee7b7 10%,
+    #a7f3d0 20%,
+    transparent 40%,
+    transparent 60%,
+    #6ee7b7 80%,
+    #a7f3d0 90%,
+    transparent 100%
+  );
+  opacity: 0.6;
+}
+
+.nexus-btn-primary:hover {
+  background: linear-gradient(135deg, #10b981, #34d399);
+  box-shadow: 0 0 24px rgba(52, 211, 153, 0.3), 0 4px 12px rgba(0,0,0,0.3);
+}
+
+/* ─── Variante: Ghost ─── */
+.nexus-btn-ghost {
+  background: transparent;
+  color: #94a3b8;
+}
+
+.nexus-btn-ghost:hover {
+  color: #e2e8f0;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* ─── Tamanhos ─── */
+.nexus-btn-sm {
+  padding: 6px 12px;
+  font-size: 10px;
+  border-radius: 8px;
+}
+
+.nexus-btn-lg {
+  padding: 14px 28px;
+  font-size: 13px;
+  border-radius: 12px;
+}
+
+/* ============================================================
+   CARD PREMIUM
+   ============================================================ */
+
+.nexus-card {
+  position: relative;
+  background: var(--nexus-card);
+  border: 1px solid var(--nexus-border);
+  border-radius: 16px;
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nexus-card:hover {
+  border-color: var(--nexus-border-hover);
+  box-shadow:
+    0 0 0 1px rgba(52, 211, 153, 0.08),
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 0 60px rgba(52, 211, 153, 0.04);
+  transform: translateY(-2px);
+}
+
+/* Shimmer overlay no card */
+.nexus-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.02) 50%,
+    transparent 70%
+  );
+  background-size: 200% 100%;
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+
+.nexus-card:hover::after {
+  opacity: 1;
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+/* ============================================================
+   HEADER GLASSMORPHISM
+   ============================================================ */
+
+.nexus-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(7, 9, 12, 0.75);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid var(--nexus-border);
+  animation: fadeIn 0.6s ease both;
+}
+
+/* ============================================================
+   HERO BANNER
+   ============================================================ */
+
+.nexus-hero {
+  position: relative;
+  padding: 48px 40px;
+  border-radius: 20px;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 60%, rgba(52, 211, 153, 0.07) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 50% at 80% 40%, rgba(34, 211, 238, 0.05) 0%, transparent 50%),
+    linear-gradient(135deg, #0e1117 0%, #12161d 100%);
+  border: 1px solid var(--nexus-border);
+  overflow: hidden;
+}
+
+.nexus-hero::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(52, 211, 153, 0.06), transparent 70%);
+  animation: float 8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* ============================================================
+   PREÇO — Destaque
+   ============================================================ */
+
+.nexus-price {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 22px;
+  background: linear-gradient(135deg, var(--neon-green), var(--neon-cyan));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.nexus-price-old {
+  font-size: 12px;
+  color: #475569;
+  text-decoration: line-through;
+  font-weight: 400;
+}
+
+/* ============================================================
+   BADGE / TAG
+   ============================================================ */
+
+.nexus-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-radius: 6px;
+  background: var(--primary-muted);
+  color: var(--neon-green);
+  border: 1px solid rgba(52, 211, 153, 0.15);
+}
+
+.nexus-badge-purple {
+  background: rgba(167, 139, 250, 0.12);
+  color: var(--neon-purple);
+  border-color: rgba(167, 139, 250, 0.15);
+}
+
+.nexus-badge-pink {
+  background: rgba(244, 114, 182, 0.12);
+  color: var(--neon-pink);
+  border-color: rgba(244, 114, 182, 0.15);
+}
+
+.nexus-badge-amber {
+  background: rgba(251, 191, 36, 0.12);
+  color: var(--neon-amber);
+  border-color: rgba(251, 191, 36, 0.15);
+}
+
+/* ============================================================
+   BARRA DE NAVEGAÇÃO HORIZONTAL DE BOTÕES
+   ============================================================ */
+
+.nexus-nav-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  background: rgba(14, 17, 23, 0.6);
+  border-radius: 14px;
+  border: 1px solid var(--nexus-border);
+  backdrop-filter: blur(12px);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.nexus-nav-bar::-webkit-scrollbar { height: 0; }
+
+/* ============================================================
+   INPUT PREMIUM
+   ============================================================ */
+
+.nexus-input {
+  width: 100%;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-family: var(--font-main);
+  color: #e2e8f0;
+  background: var(--nexus-surface);
+  border: 1px solid var(--nexus-border);
+  border-radius: 10px;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.nexus-input:focus {
+  border-color: var(--neon-green);
+  box-shadow: 0 0 0 3px var(--primary-muted);
+}
+
+.nexus-input::placeholder {
+  color: #475569;
+}
+
+/* ============================================================
+   CONTAINER DE LAYOUT
+   ============================================================ */
+
+.nexus-container {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.nexus-section {
+  padding: 32px 0;
+}
+
+/* Grid responsivo para produtos */
+.nexus-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
+}
+
+@media (max-width: 640px) {
+  .nexus-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+/* ============================================================
+   UTILITIES
+   ============================================================ */
+
+.nexus-glow-text {
+  background: linear-gradient(135deg, var(--neon-green), var(--neon-cyan));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.nexus-glass {
+  background: rgba(14, 17, 23, 0.5);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid var(--nexus-border);
+}
+
+.nexus-divider {
+  border: none;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--nexus-border) 20%,
+    rgba(52, 211, 153, 0.1) 50%,
+    var(--nexus-border) 80%,
+    transparent 100%
+  );
+}
+
+/* Breathing animation para destaque */
+.nexus-breathe {
+  animation: breathe 3s ease-in-out infinite;
+}

@@ -1,7 +1,7 @@
 /**
  * @file App.tsx
  * @description Ponto de Entrada Principal do Aplicativo React da Nexus Digital Shop.
- * Conecta o ShopProvider ao Header e alterna dinamicamente entre a Vitrine Digital e o Painel Administrativo.
+ * Importa o sistema visual Nexus CSS e conecta ShopProvider, Header e rotas.
  */
 
 import React, { useState } from 'react';
@@ -9,15 +9,23 @@ import { ShopProvider } from './context/ShopContext';
 import { Header } from './components/Header';
 import { StorefrontRoute } from './routes/index';
 import { AdminDashboard } from './routes/AdminDashboard';
+import './styles/nexus.css';
 
 export const App: React.FC = () => {
   const [viewMode, setViewMode] = useState<'vitrine' | 'admin'>('vitrine');
 
   return (
     <ShopProvider>
-      <div className="min-h-screen bg-[#0b0d10] text-gray-100 flex flex-col font-['Montserrat',sans-serif]">
+      <div style={{
+        minHeight: '100vh',
+        background: 'var(--nexus-bg)',
+        color: '#e2e8f0',
+        fontFamily: 'var(--font-main)',
+        display: 'flex',
+        flexDirection: 'column',
+      }}>
         <Header viewMode={viewMode} setViewMode={setViewMode} />
-        <main className="flex-1">
+        <main style={{ flex: 1 }}>
           {viewMode === 'vitrine' ? <StorefrontRoute /> : <AdminDashboard />}
         </main>
       </div>

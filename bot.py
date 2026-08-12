@@ -576,9 +576,8 @@ async def confirm_payment(update, context, codigo_pedido):
         f"✅ Se tiver problemas, fale com o suporte"
     )
 
-    await update.callback_query.edit_message_text(
-        msg,
-        parse_mode=ParseMode.MARKDOWN,
+    await safe_edit_or_send(
+        update.callback_query, context, msg,
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton("⬇️ Baixar Agora", url=link_download)],
             [InlineKeyboardButton("💬 Suporte", callback_data="support")],
@@ -612,9 +611,9 @@ async def show_orders(update, context):
     user_pedidos = db.get_pedidos_usuario(user_id, limit=5)
 
     if not user_pedidos:
-        await update.callback_query.edit_message_text(
+        await safe_edit_or_send(
+            update.callback_query, context,
             "📦 *Meus Pedidos*\n\nVocê ainda não realizou nenhum pedido.",
-            parse_mode=ParseMode.MARKDOWN,
             reply_markup=voltar_menu()
         )
         return
@@ -630,7 +629,7 @@ async def show_orders(update, context):
         text += f"\n   💰 R$ {p['total']:.2f} | {p['status'].upper()}\n"
         text += f"   📅 {p.get('data', '')}\n\n"
 
-    await update.callback_query.edit_message_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=voltar_menu())
+    await safe_edit_or_send(update.callback_query, context, text, reply_markup=voltar_menu())
 
 async def show_profile(update, context):
     """Exibe perfil do usuário"""
@@ -648,9 +647,8 @@ async def show_profile(update, context):
         f"🔒 Seus dados estão seguros!"
     )
 
-    await update.callback_query.edit_message_text(
-        text,
-        parse_mode=ParseMode.MARKDOWN,
+    await safe_edit_or_send(
+        update.callback_query, context, text,
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton("✏️ Atualizar Cadastro", callback_data="update_profile")],
             [InlineKeyboardButton("🏠 Menu", callback_data="main_menu")]
@@ -670,13 +668,13 @@ async def iniciar_cadastro(update, context, redirect_to=None):
     context.user_data["cadastro"] = {"redirect": redirect_to}
     context.user_data["cadastro_passo"] = "nome"
 
-    await update.callback_query.edit_message_text(
+    await safe_edit_or_send(
+        update.callback_query, context,
         "📝 *CADASTRO DO CLIENTE*\n\n"
         "Para finalizar sua compra, precisamos de alguns dados.\n\n"
         "🔒 *Seus dados estão seguros!*\n"
         "✅ Protegidos pela LGPD\n\n"
-        "*Digite seu nome completo:*",
-        parse_mode=ParseMode.MARKDOWN
+        "*Digite seu nome completo:*"
     )
 
 async def processar_cadastro(update, context):
@@ -766,7 +764,7 @@ async def show_institutional(update, context):
         "✅ Melhor preço"
     )
 
-    await update.callback_query.edit_message_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=voltar_menu())
+    await safe_edit_or_send(update.callback_query, context, text, reply_markup=voltar_menu())
 
 async def show_support(update, context):
     """Exibe suporte"""
@@ -789,9 +787,8 @@ async def show_support(update, context):
     ]
 
     if update.callback_query:
-        await update.callback_query.edit_message_text(
-            text,
-            parse_mode=ParseMode.MARKDOWN,
+        await safe_edit_or_send(
+            update.callback_query, context, text,
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
     else:
@@ -1061,9 +1058,9 @@ async def button(update, context):
     elif data.startswith("search_res_"):
         page = int(data.split("_")[2])
         results = context.user_data.get("last_search_results", GAMES_CATALOG)
-        await query.edit_message_text(
+        await safe_edit_or_send(
+            query, context,
             "🔍 *RESULTADOS DA BUSCA*",
-            parse_mode=ParseMode.MARKDOWN,
             reply_markup=catalog_keyboard(page, results, prefix="search_res")
         )
 

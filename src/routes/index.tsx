@@ -1,116 +1,105 @@
 /**
  * @file index.tsx
- * @description Rota Principal da Vitrine Digital e Exibição de Detalhes do Produto.
- * Resolve a sincronização do barramento de dados entre a vitrine e a aba interna de produto com Montserrat Light.
+ * @description Vitrine Digital Premium do Nexus Digital Shop.
+ * Fade-in em cascata, cards com shimmer, botões neon, cores suaves e layout responsivo.
  */
 
 import React from 'react';
 import { useShop } from '../context/ShopContext';
-import { ShoppingBag, ArrowLeft, CheckCircle, ShieldCheck, Zap, Star } from 'lucide-react';
 
 export const StorefrontRoute: React.FC = () => {
   const { produtos, slugAtivo, produtoSelecionado, setSlugAtivo, adicionarPedidoSimulado } = useShop();
 
-  // SE UM SLUG ESTIVER ATIVO: Renderiza a Tela de Detalhes do Produto
+  /* ─── TELA DE DETALHE DO PRODUTO ─── */
   if (slugAtivo && produtoSelecionado) {
     return (
-      <div className="min-h-screen bg-[#0d0f12] text-gray-100 font-['Montserrat',sans-serif] p-6 lg:p-12">
-        <div className="max-w-6xl mx-auto">
-          {/* Botão de Retorno à Vitrine */}
+      <div style={{ minHeight: '100vh', padding: '32px 24px' }}>
+        <div className="nexus-container nexus-fade-in" style={{ maxWidth: 1000 }}>
+          
+          {/* Voltar */}
           <button
             onClick={() => setSlugAtivo(null)}
-            className="flex items-center gap-2 text-emerald-400 hover:text-emerald-300 font-light mb-8 transition-colors duration-200 cursor-pointer"
+            className="nexus-btn nexus-btn-ghost nexus-btn-sm"
+            style={{ marginBottom: 28 }}
           >
-            <ArrowLeft className="w-5 h-5" />
-            <span>Voltar para a Vitrine</span>
+            ← Voltar para a Vitrine
           </button>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start bg-[#14171c] p-8 rounded-2xl border border-gray-800 shadow-2xl">
-            {/* Mídia Real do Produto */}
-            <div className="space-y-4">
-              <div className="relative aspect-video rounded-xl overflow-hidden border border-gray-700 bg-gray-900">
-                <img
-                  src={produtoSelecionado.imagemUrl}
-                  alt={produtoSelecionado.nome}
-                  className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-500"
-                />
-                <span className="absolute top-4 left-4 bg-emerald-500/90 text-black text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider">
-                  {produtoSelecionado.categoria}
-                </span>
-              </div>
-              
-              <div className="flex items-center justify-between text-xs text-gray-400 border-t border-gray-800 pt-4">
-                <div className="flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-emerald-400" />
-                  <span>Entrega Digital Imediata via PIX</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                  <span>Garantia Vitalícia</span>
-                </div>
-              </div>
+          <div className="nexus-card nexus-scale-in" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0, overflow: 'hidden' }}>
+            
+            {/* Imagem */}
+            <div style={{ position: 'relative', overflow: 'hidden', minHeight: 380, background: '#0a0c10' }}>
+              <img
+                src={produtoSelecionado.imagemUrl}
+                alt={produtoSelecionado.nome}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  transition: 'transform 0.6s cubic-bezier(0.16,1,0.3,1)',
+                }}
+                onMouseOver={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
+                onMouseOut={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+              />
+              <span className="nexus-badge" style={{ position: 'absolute', top: 16, left: 16 }}>
+                {produtoSelecionado.categoria}
+              </span>
             </div>
 
-            {/* Informações Comerciais */}
-            <div className="space-y-6">
+            {/* Info */}
+            <div style={{ padding: 36, display: 'flex', flexDirection: 'column', gap: 20, justifyContent: 'center' }}>
               <div>
-                <span className="text-xs uppercase tracking-widest text-emerald-400 font-light">
+                <span className="nexus-badge-purple nexus-badge" style={{ marginBottom: 10, display: 'inline-flex' }}>
                   {produtoSelecionado.plataforma}
                 </span>
-                <h1 className="text-3xl font-light tracking-wide text-white mt-1">
+                <h1 style={{ fontSize: 26, fontWeight: 300, color: '#f8fafc', letterSpacing: '-0.01em', lineHeight: 1.3 }}>
                   {produtoSelecionado.nome}
                 </h1>
-                <div className="flex items-center gap-1 mt-2 text-amber-400 text-sm">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 fill-amber-400" />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 8 }}>
+                  {[1,2,3,4,5].map(i => (
+                    <span key={i} style={{ color: '#fbbf24', fontSize: 14 }}>★</span>
                   ))}
-                  <span className="text-gray-400 text-xs ml-2 font-light">(4.9/5 baseado em 128 avaliações)</span>
+                  <span style={{ fontSize: 11, color: '#64748b', marginLeft: 6 }}>4.9 (128 avaliações)</span>
                 </div>
               </div>
 
-              <p className="text-gray-300 font-light leading-relaxed text-sm">
+              <p style={{ fontSize: 13, color: '#94a3b8', fontWeight: 300, lineHeight: 1.7 }}>
                 {produtoSelecionado.descricao}
               </p>
 
-              {/* Bloco de Preço */}
-              <div className="bg-[#1c2128] p-6 rounded-xl border border-gray-800 space-y-4">
-                <div className="flex items-baseline gap-4">
-                  <span className="text-3xl font-bold text-emerald-400">
+              {/* Bloco de preço */}
+              <div className="nexus-glass" style={{ padding: 24, borderRadius: 14 }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, marginBottom: 16 }}>
+                  <span className="nexus-price">
                     R$ {produtoSelecionado.precoOferta.toFixed(2).replace('.', ',')}
                   </span>
                   {produtoSelecionado.precoOriginal > produtoSelecionado.precoOferta && (
-                    <span className="text-sm line-through text-gray-500 font-light">
+                    <span className="nexus-price-old">
                       R$ {produtoSelecionado.precoOriginal.toFixed(2).replace('.', ',')}
                     </span>
                   )}
-                  <span className="text-xs bg-emerald-500/20 text-emerald-300 px-2 py-1 rounded">
-                    Economia de R$ {(produtoSelecionado.precoOriginal - produtoSelecionado.precoOferta).toFixed(2).replace('.', ',')}
+                  <span className="nexus-badge" style={{ fontSize: 9 }}>
+                    💰 -{Math.round((1 - produtoSelecionado.precoOferta / produtoSelecionado.precoOriginal) * 100)}%
                   </span>
                 </div>
 
-                {/* Botão de Compra Direta */}
                 <button
                   onClick={() => {
                     adicionarPedidoSimulado(produtoSelecionado.precoOferta);
-                    alert(`✅ Pedido gerado com sucesso para ${produtoSelecionado.nome}!`);
+                    alert(`✅ Pedido gerado para ${produtoSelecionado.nome}!`);
                   }}
-                  className="w-full py-4 bg-emerald-500 hover:bg-emerald-400 text-black font-semibold rounded-xl flex items-center justify-center gap-3 transition-all transform active:scale-95 shadow-lg shadow-emerald-500/20 cursor-pointer"
+                  className="nexus-btn nexus-btn-primary nexus-btn-lg"
+                  style={{ width: '100%' }}
                 >
-                  <ShoppingBag className="w-5 h-5" />
-                  <span>Comprar Agora via PIX</span>
+                  ⚡ Comprar Agora via PIX
                 </button>
               </div>
 
               {/* Vantagens */}
-              <div className="space-y-2 text-xs text-gray-400 font-light">
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-emerald-400" />
-                  <span>Ativação em até 30 segundos no seu painel ou Telegram</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-emerald-400" />
-                  <span>Suporte técnico prioritário pós-venda</span>
-                </div>
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                <span className="nexus-badge" style={{ fontWeight: 400, textTransform: 'none' }}>✅ Entrega em 30s</span>
+                <span className="nexus-badge" style={{ fontWeight: 400, textTransform: 'none' }}>🔒 100% Seguro</span>
+                <span className="nexus-badge" style={{ fontWeight: 400, textTransform: 'none' }}>💬 Suporte VIP</span>
               </div>
             </div>
           </div>
@@ -119,80 +108,129 @@ export const StorefrontRoute: React.FC = () => {
     );
   }
 
-  // TELA PADRÃO DA VITRINE DIGITAL
+  /* ─── VITRINE PRINCIPAL ─── */
   return (
-    <div className="min-h-screen bg-[#0d0f12] text-gray-100 font-['Montserrat',sans-serif] p-6 lg:p-12">
-      <div className="max-w-7xl mx-auto space-y-12">
-        {/* Banner Hero */}
-        <header className="relative bg-gradient-to-r from-emerald-900/40 via-gray-900 to-emerald-950/40 p-8 lg:p-12 rounded-3xl border border-emerald-500/20 shadow-2xl overflow-hidden">
-          <div className="max-w-2xl space-y-4">
-            <span className="text-xs uppercase tracking-widest text-emerald-400 font-light">
-              Catálogo Oficial Exclusivo
+    <div style={{ minHeight: '100vh', padding: '32px 24px' }}>
+      <div className="nexus-container" style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
+
+        {/* Hero Banner */}
+        <div className="nexus-hero nexus-fade-in">
+          <div style={{ maxWidth: 560, position: 'relative', zIndex: 2 }}>
+            <span className="nexus-badge" style={{ marginBottom: 14, display: 'inline-flex' }}>
+              ⚡ Catálogo Oficial
             </span>
-            <h1 className="text-4xl lg:text-5xl font-light text-white tracking-tight">
-              Nexus Digital Shop
+            <h1 style={{ fontSize: 38, fontWeight: 300, color: '#f8fafc', letterSpacing: '-0.02em', lineHeight: 1.15, marginBottom: 14 }}>
+              <span className="nexus-glow-text">Nexus</span> Digital Shop
             </h1>
-            <p className="text-gray-300 font-light text-sm lg:text-base leading-relaxed">
-              Ativos digitais de alta performance, licenças originais e ferramentas de inteligência artificial com entrega 100% automatizada.
+            <p style={{ fontSize: 14, color: '#94a3b8', fontWeight: 300, lineHeight: 1.7, marginBottom: 24 }}>
+              Ativos digitais premium, licenças originais e ferramentas IA com entrega 100% automatizada.
             </p>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button className="nexus-btn nexus-btn-primary nexus-btn-sm">⚡ Ver Ofertas</button>
+              <button className="nexus-btn nexus-btn-sm">📚 Catálogo Completo</button>
+              <button className="nexus-btn nexus-btn-sm">🤖 IA Tools</button>
+              <button className="nexus-btn nexus-btn-sm">🎮 Jogos</button>
+              <button className="nexus-btn nexus-btn-sm">🎓 Cursos</button>
+            </div>
           </div>
-        </header>
+        </div>
 
-        {/* Grade de Produtos Sincronizada */}
-        <section className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-light tracking-wide text-white">
-              Vitrine de Destaques ({produtos.length})
+        {/* Seção de Produtos */}
+        <section className="nexus-fade-in nexus-fade-in-delay-2">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+            <h2 style={{ fontSize: 20, fontWeight: 300, color: '#f1f5f9', letterSpacing: '0.01em' }}>
+              Destaques <span style={{ color: '#64748b', fontSize: 14 }}>({produtos.length})</span>
             </h2>
-            <span className="text-xs text-emerald-400 font-light">
-              Sincronização em tempo real ativa
-            </span>
+            <div style={{ display: 'flex', gap: 4 }}>
+              <button className="nexus-btn nexus-btn-sm nexus-btn-ghost">Todos</button>
+              <button className="nexus-btn nexus-btn-sm nexus-btn-ghost">🔥 Ofertas</button>
+              <button className="nexus-btn nexus-btn-sm nexus-btn-ghost">⭐ Top</button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {produtos.map((prod) => (
+          <div className="nexus-grid">
+            {produtos.map((prod, index) => (
               <div
                 key={prod.id}
                 onClick={() => setSlugAtivo(prod.slug)}
-                className="group bg-[#14171c] rounded-2xl border border-gray-800 overflow-hidden hover:border-emerald-500/50 transition-all duration-300 shadow-lg cursor-pointer flex flex-col justify-between"
+                className={`nexus-card nexus-fade-in nexus-fade-in-delay-${Math.min(index + 1, 8)}`}
+                style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column' }}
               >
-                <div>
-                  <div className="relative aspect-video overflow-hidden bg-gray-900">
-                    <img
-                      src={prod.imagemUrl}
-                      alt={prod.nome}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    />
-                    <span className="absolute top-3 right-3 bg-black/70 backdrop-blur-md text-emerald-400 text-[10px] px-2 py-1 rounded">
-                      {prod.categoria}
-                    </span>
-                  </div>
-
-                  <div className="p-5 space-y-3">
-                    <span className="text-[11px] text-gray-400 uppercase font-light">
-                      {prod.plataforma}
-                    </span>
-                    <h3 className="text-base font-light text-white group-hover:text-emerald-400 transition-colors line-clamp-1">
-                      {prod.nome}
-                    </h3>
-                    <p className="text-xs text-gray-400 font-light line-clamp-2">
-                      {prod.descricao}
-                    </p>
-                  </div>
+                {/* Imagem */}
+                <div style={{ position: 'relative', aspectRatio: '16/9', overflow: 'hidden', background: '#0a0c10' }}>
+                  <img
+                    src={prod.imagemUrl}
+                    alt={prod.nome}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      transition: 'transform 0.5s cubic-bezier(0.16,1,0.3,1)',
+                    }}
+                    onMouseOver={(e) => (e.currentTarget.style.transform = 'scale(1.08)')}
+                    onMouseOut={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+                  />
+                  <span className="nexus-badge" style={{
+                    position: 'absolute',
+                    top: 10,
+                    right: 10,
+                    background: 'rgba(0,0,0,0.65)',
+                    backdropFilter: 'blur(8px)',
+                    borderColor: 'transparent',
+                  }}>
+                    {prod.categoria}
+                  </span>
                 </div>
 
-                <div className="p-5 pt-0 border-t border-gray-800/50 mt-4 flex items-center justify-between">
+                {/* Info */}
+                <div style={{ padding: '16px 18px', flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <span style={{ fontSize: 9, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                    {prod.plataforma}
+                  </span>
+                  <h3 style={{
+                    fontSize: 14,
+                    fontWeight: 400,
+                    color: '#e2e8f0',
+                    lineHeight: 1.3,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}>
+                    {prod.nome}
+                  </h3>
+                  <p style={{
+                    fontSize: 11,
+                    color: '#64748b',
+                    fontWeight: 300,
+                    lineHeight: 1.5,
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                    flex: 1,
+                  }}>
+                    {prod.descricao}
+                  </p>
+                </div>
+
+                {/* Footer do Card */}
+                <div style={{
+                  padding: '14px 18px',
+                  borderTop: '1px solid rgba(255,255,255,0.04)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}>
                   <div>
-                    <span className="text-xs text-gray-500 line-through block font-light">
+                    <span className="nexus-price-old" style={{ display: 'block' }}>
                       R$ {prod.precoOriginal.toFixed(2).replace('.', ',')}
                     </span>
-                    <span className="text-lg font-bold text-emerald-400">
+                    <span className="nexus-price" style={{ fontSize: 17 }}>
                       R$ {prod.precoOferta.toFixed(2).replace('.', ',')}
                     </span>
                   </div>
-
-                  <button className="px-3 py-2 bg-emerald-500/10 hover:bg-emerald-500 text-emerald-400 hover:text-black rounded-lg text-xs font-semibold transition-all">
-                    Ver Detalhes
+                  <button className="nexus-btn nexus-btn-sm">
+                    Ver →
                   </button>
                 </div>
               </div>

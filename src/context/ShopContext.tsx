@@ -14,6 +14,7 @@ import {
   SupabaseService 
 } from '../services/supabase';
 
+
 interface ShopContextType {
   // Estado do Catálogo e Vitrine
   produtos: Produto[];
@@ -152,13 +153,15 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     SupabaseService.saveProdutos(lista);
   };
 
-  const atualizarProduto = (id: string, alteracoes: Partial<Produto>) => {
+  const atualizarProduto = async (id: string, alteracoes: Partial<Produto>) => {
+    await Restore.createBackup();
     const lista = produtos.map((p) => (p.id === id ? { ...p, ...alteracoes } : p));
     setProdutos(lista);
     SupabaseService.saveProdutos(lista);
   };
 
-  const removerProduto = (id: string) => {
+  const removerProduto = async (id: string) => {
+    await Restore.createBackup();
     const lista = produtos.filter((p) => p.id !== id);
     setProdutos(lista);
     SupabaseService.saveProdutos(lista);
@@ -180,7 +183,8 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setRegistrosDNS((prev) => [...prev, novo]);
   };
 
-  const removerRegistroDNS = (id: string) => {
+  const removerRegistroDNS = async (id: string) => {
+    await Restore.createBackup();
     setRegistrosDNS((prev) => prev.filter((d) => d.id !== id));
   };
 

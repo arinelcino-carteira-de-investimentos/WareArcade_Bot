@@ -256,6 +256,9 @@ _IMG_BY_TYPE = {
     "🤖 IA - Código":     "https://upload.wikimedia.org/wikipedia/commons/6/61/GitHub_Copilot_logo.svg",
     "🤖 IA - Ferramenta": "https://cdn-icons-png.flaticon.com/512/10038/10038135.png",
     "🤖 IA Plano":        "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/Artificial_intelligence_icon.svg/240px-Artificial_intelligence_icon.svg.png",
+    "📈 Finanças":        "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c8/Money_font_awesome.svg/240px-Money_font_awesome.svg.png",
+    "📱 Mobile":          "https://upload.wikimedia.org/wikipedia/commons/thumb/6/64/Android_logo_2019_%28stacked%29.svg/240px-Android_logo_2019_%28stacked%29.svg.png",
+    "💻 Dev & Código":    "https://upload.wikimedia.org/wikipedia/commons/9/9a/Visual_Studio_Code_1.35_icon.svg",
 }
 
 # ---- Imagens específicas por produto
@@ -598,8 +601,31 @@ def _add(nome, tipo, po, porig=None, desc="", plataforma="PC", categorias=None, 
 
 # Windows/Office extras
 _add("Windows 11 Enterprise LTSC", "🖥️ Sistema", 29.90, 1999.90,
-     "Windows 11 Enterprise LTSC para empresas, sem bloatware.",
-     categorias=["Sistema Operacional"])
+     "Windows 11 LTSC, sem bloatware, máxima performance.", "PC", ["Sistema Operacional"], oferta=True)
+
+# --- Produtos e Ferramentas Modernas (Adicionados Recentemente) ---
+_add("Canva Pro - Assinatura 1 Ano", "🎨 Design", 49.90, 289.90, 
+     "Conta Canva Pro exclusiva por 1 ano. Todos os recursos Premium e IA desbloqueados.", "Web/App", ["Design", "Produtividade", "Destaques"], oferta=True)
+
+_add("CapCut Pro - Conta Anual", "🎬 Vídeo", 39.90, 329.90, 
+     "CapCut Pro para PC e Celular. Transições, efeitos e IA Premium.", "Multi", ["Edição de Vídeo", "Mobile"], oferta=True)
+
+_add("Notion Plus - 12 Meses", "💼 Produtividade", 34.90, 480.00, 
+     "Conta Notion Plus com Notion AI integrado. Otimize sua vida e projetos.", "Multi", ["Produtividade", "Organização"], oferta=True)
+
+_add("FL Studio 21 Signature Bundle", "🎵 Música", 89.90, 1899.90, 
+     "O software de produção musical mais popular do mundo. Acesso vitalício.", "PC", ["Áudio", "Produção"], oferta=True)
+
+_add("Midjourney Pro - Acesso Mensal", "🤖 IA - Imagem", 59.90, 300.00, 
+     "Gere imagens realistas e incríveis com a melhor IA do mercado (Modo Stealth incluso).", "Discord", ["IA", "Design", "Destaques"], oferta=True)
+
+_add("Chatbot IA Telegram - Código Fonte", "💻 Dev & Código", 149.90, 999.90, 
+     "Código fonte completo de um bot de vendas com IA integrada, pronto para rodar e lucrar.", "Código", ["Desenvolvimento", "IA"], oferta=True)
+
+_add("Planilha Mestre de Finanças 2026", "📈 Finanças", 19.90, 97.90, 
+     "Controle tudo: ganhos, gastos, investimentos e cripto com dashboards automáticos.", "Excel", ["Finanças", "Organização"], oferta=True)
+
+
 _add("Windows 10 Home (Ativação Vitalícia)", "🖥️ Sistema", 49.90, 799.90,
      "Licença Windows 10 Home vitalícia.", categorias=["Sistema Operacional"])
 _add("Windows Server 2019 Standard", "🖥️ Sistema", 399.90, 3999.90,
