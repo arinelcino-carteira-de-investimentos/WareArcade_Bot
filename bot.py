@@ -94,6 +94,22 @@ def formatar_whatsapp(numero):
         return f"+55{numero}"
     return f"+{numero}" if not numero.startswith("+") else numero
 
+async def safe_edit_or_send(query, context, text, parse_mode=ParseMode.MARKDOWN, reply_markup=None):
+    """Tenta editar a mensagem; se for foto (BadRequest), deleta e envia nova."""
+    try:
+        await query.edit_message_text(
+            text, parse_mode=parse_mode, reply_markup=reply_markup
+        )
+    except BadRequest:
+        try:
+            await query.message.delete()
+        except Exception:
+            pass
+        await context.bot.send_message(
+            chat_id=query.message.chat_id,
+            text=text, parse_mode=parse_mode, reply_markup=reply_markup
+        )
+
 # ============================================================
 # KEYBOARDS
 # ============================================================
@@ -203,13 +219,13 @@ async def start(update, context):
     if update.message:
         await update.message.reply_text(welcome, parse_mode=ParseMode.MARKDOWN, reply_markup=menu_principal())
     else:
-        await update.callback_query.edit_message_text(welcome, parse_mode=ParseMode.MARKDOWN, reply_markup=menu_principal())
+        await safe_edit_or_send(update.callback_query, context, welcome, reply_markup=menu_principal())
 
 async def show_catalog(update, context, page=0):
     """Exibe o catálogo paginado"""
-    await update.callback_query.edit_message_text(
+    await safe_edit_or_send(
+        update.callback_query, context,
         "📚 *CATÁLOGO COMPLETO*\n\nSelecione um produto:",
-        parse_mode=ParseMode.MARKDOWN,
         reply_markup=catalog_keyboard(page, GAMES_CATALOG)
     )
 
@@ -217,15 +233,15 @@ async def show_offers(update, context, page=0):
     """Exibe produtos em oferta"""
     offers = get_offers()
     if not offers:
-        await update.callback_query.edit_message_text(
+        await safe_edit_or_send(
+            update.callback_query, context,
             "🔥 Nenhuma oferta no momento.",
-            parse_mode=ParseMode.MARKDOWN,
             reply_markup=voltar_menu()
         )
         return
-    await update.callback_query.edit_message_text(
+    await safe_edit_or_send(
+        update.callback_query, context,
         "🔥 *OFERTAS IMPERDÍVEIS!*\n\nConfira os descontos:",
-        parse_mode=ParseMode.MARKDOWN,
         reply_markup=catalog_keyboard(page, offers, prefix="offers")
     )
 
@@ -250,14 +266,14 @@ async def show_categories(update, context):
         "☁️ Cloud (3)\n\n"
         "📌 *Use /start para ver todos os produtos*"
     )
-    await update.callback_query.edit_message_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=voltar_menu())
+    await safe_edit_or_send(update.callback_query, context, text, reply_markup=voltar_menu())
 
 async def search_product_click(update, context):
     """Inicia busca"""
     context.user_data["searching"] = True
-    await update.callback_query.edit_message_text(
+    await safe_edit_or_send(
+        update.callback_query, context,
         "🔍 *Buscar Produto*\n\nDigite o nome do produto:",
-        parse_mode=ParseMode.MARKDOWN,
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton("❌ Cancelar", callback_data="main_menu")]
         ])
@@ -358,9 +374,9 @@ async def show_cart(update, context):
     cart = db.get_cart(user_id)
 
     if not cart:
-        await update.callback_query.edit_message_text(
+        await safe_edit_or_send(
+            update.callback_query, context,
             "🛒 *Meu Carrinho*\n\nSeu carrinho está vazio!",
-            parse_mode=ParseMode.MARKDOWN,
             reply_markup=voltar_menu()
         )
         return
@@ -377,9 +393,8 @@ async def show_cart(update, context):
     keyboard.append([InlineKeyboardButton("💰 Finalizar Compra", callback_data="checkout")])
     keyboard.append([InlineKeyboardButton("🏠 Menu", callback_data="main_menu")])
 
-    await update.callback_query.edit_message_text(
-        text,
-        parse_mode=ParseMode.MARKDOWN,
+    await safe_edit_or_send(
+        update.callback_query, context, text,
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
 
@@ -396,16 +411,19 @@ async def add_to_cart(update, context, game_id):
 
     await update.callback_query.answer(f"✅ {game['nome']} adicionado ao carrinho!")
 
-    await update.callback_query.edit_message_text(
+    add_text = (
         f"✅ *{game['nome']}* adicionado ao carrinho!\n\n"
         f"💰 R$ {game['preco_oferta']:.2f}\n\n"
-        f"O que deseja fazer?",
-        parse_mode=ParseMode.MARKDOWN,
-        reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("🛒 Ver Carrinho", callback_data="cart")],
-            [InlineKeyboardButton("📚 Continuar Comprando", callback_data="catalog_0")],
-            [InlineKeyboardButton("🏠 Menu", callback_data="main_menu")]
-        ])
+        f"O que deseja fazer?"
+    )
+    add_markup = InlineKeyboardMarkup([
+        [InlineKeyboardButton("🛒 Ver Carrinho", callback_data="cart")],
+        [InlineKeyboardButton("📚 Continuar Comprando", callback_data="catalog_0")],
+        [InlineKeyboardButton("🏠 Menu", callback_data="main_menu")]
+    ])
+    await safe_edit_or_send(
+        update.callback_query, context, add_text,
+        reply_markup=add_markup
     )
 
 async def buy_now(update, context, game_id):
@@ -451,9 +469,8 @@ async def start_checkout(update, context):
 
     text += f"\n💰 *TOTAL: R$ {total:.2f}*\n\n*Selecione o pagamento:*"
 
-    await update.callback_query.edit_message_text(
-        text,
-        parse_mode=ParseMode.MARKDOWN,
+    await safe_edit_or_send(
+        update.callback_query, context, text,
         reply_markup=payment_keyboard()
     )
 
@@ -1169,8 +1186,20 @@ def main():
     app.add_handler(CommandHandler("liberar", cmd_liberar))
 
     # ===== MODO DE EXECUÇÃO =====
-    print("📡 Modo Polling Ativo - Limpando conexões anteriores para resposta imediata...")
-    app.run_polling(drop_pending_updates=True)
+    if WEBHOOK_URL:
+        print(f"✅ Webhook configurado: {WEBHOOK_URL}/webhook na porta {PORT}")
+        app.run_webhook(
+            listen="0.0.0.0",
+            port=PORT,
+            url_path="webhook",
+            webhook_url=f"{WEBHOOK_URL}/webhook"
+        )
+    else:
+        print("📡 Modo Polling (desenvolvimento/produção contínua)")
+        # Inicia health‑check server em background
+        t = threading.Thread(target=start_health_check_server, args=(PORT,), daemon=True)
+        t.start()
+        app.run_polling()
 
 # ===== ENTRY POINT =====
 if __name__ == "__main__":
