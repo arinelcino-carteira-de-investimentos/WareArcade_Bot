@@ -1259,9 +1259,11 @@ def main():
         )
     else:
         print("📡 Modo Polling (desenvolvimento/produção contínua)")
-        # Inicia health‑check server em background
-        t = threading.Thread(target=start_health_check_server, args=(PORT,), daemon=True)
-        t.start()
+        
+        # Cria um novo event loop para evitar erros em Python 3.14+
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
         app.run_polling()
 
 # ===== ENTRY POINT =====
@@ -1272,4 +1274,6 @@ if __name__ == "__main__":
         print("\n🛑 Bot parado pelo usuário.")
     except Exception as e:
         print(f"\n❌ Erro: {e}")
+        import traceback
+        traceback.print_exc()
         sys.exit(1)
