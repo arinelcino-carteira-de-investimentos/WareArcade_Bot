@@ -655,6 +655,28 @@ async def confirm_payment(update, context, codigo_pedido):
         ])
     )
 
+    # ===== INTEGRAÇÃO WHATSAPP OMNICHANNEL =====
+    telefone_cliente = pedido.get("cliente", {}).get("whatsapp")
+    if telefone_cliente:
+        try:
+            wa_token = os.getenv("WHATSAPP_API_TOKEN", "")
+            wa_url = os.getenv("WHATSAPP_API_URL", "") # Ex: URL do Evolution API, Z-API, Zapier, Make
+            
+            if wa_token and wa_url:
+                wa_payload = {
+                    "number": telefone_cliente,
+                    "text": msg.replace("*", "") # Mensagem limpa
+                }
+                import aiohttp
+                async with aiohttp.ClientSession() as session:
+                    await session.post(
+                        wa_url, 
+                        json=wa_payload, 
+                        headers={"Authorization": f"Bearer {wa_token}", "Content-Type": "application/json"}
+                    )
+        except Exception as e:
+            logger.warning(f"Erro ao enviar WhatsApp: {e}")
+            
     # Notifica admin se houver
     if ADMIN_IDS:
         admin_text = (
