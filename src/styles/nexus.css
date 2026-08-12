@@ -7,7 +7,7 @@
    • Glassmorphism e micro-interações
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500&family=JetBrains+Mono:wght@300;400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 /* ─── Variáveis Globais ─── */
 :root {
@@ -30,8 +30,8 @@
   --primary-muted: rgba(52, 211, 153, 0.15);
   --primary-glow:  rgba(52, 211, 153, 0.25);
 
-  /* Tipografia Light/Minimalista */
-  --font-main: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
+  /* Tipografia */
+  --font-main: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 }
 
@@ -50,7 +50,6 @@ html {
 
 body {
   font-family: var(--font-main);
-  font-weight: 300; /* Forçando Light como padrão */
   background: var(--nexus-bg);
   color: #e2e8f0;
   line-height: 1.6;
@@ -177,7 +176,7 @@ body {
   gap: 6px;
   padding: 8px 18px;
   font-size: 11px;
-  font-weight: 400;
+  font-weight: 500;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: #e2e8f0;
@@ -254,7 +253,7 @@ body {
 .nexus-btn-primary {
   background: linear-gradient(135deg, #059669, #10b981);
   color: #000;
-  font-weight: 400;
+  font-weight: 600;
 }
 
 .nexus-btn-primary::before {
@@ -393,7 +392,7 @@ body {
 
 .nexus-price {
   font-family: var(--font-mono);
-  font-weight: 400;
+  font-weight: 600;
   font-size: 22px;
   background: linear-gradient(135deg, var(--neon-green), var(--neon-cyan));
   -webkit-background-clip: text;
@@ -418,7 +417,7 @@ body {
   gap: 4px;
   padding: 3px 10px;
   font-size: 9px;
-  font-weight: 400;
+  font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   border-radius: 6px;
