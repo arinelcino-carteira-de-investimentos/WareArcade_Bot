@@ -37,6 +37,7 @@ from catalog import (
     get_total_produtos, get_total_ofertas
 )
 import database as db
+import payments
 
 load_dotenv()
 
@@ -575,34 +576,51 @@ async def process_payment(update, context, method):
     except Exception:
         pass
 
-    # Mensagem de pagamento
+    # ===== INTEGRAÇÃO PIX VIA PAYMENT PROVIDER =====
+    await context.bot.send_message(chat_id=user_id, text="⏳ Gerando PIX... aguarde!")
+    
+    try:
+        pix_data = await payments.gerar_qr_para_pedido(codigo_pedido, total)
+    except Exception as e:
+        logger.error(f"Erro ao gerar PIX: {e}")
+        await context.bot.send_message(chat_id=user_id, text="❌ Falha ao gerar PIX. Tente novamente mais tarde.")
+        return
+
+    copia_cola = pix_data.get("qr_code_copia_cola") or EMPRESA['pix']
+
     text = (
         f"💚 *PAGAMENTO VIA PIX*\n\n"
         f"💰 *Valor: R$ {total:.2f}*\n"
         f"📋 *Pedido: `{codigo_pedido}`*\n\n"
-        f"📱 *Chave PIX (CNPJ):*\n"
-        f"`{EMPRESA['pix']}`\n\n"
-        f"📛 *Nome:* {EMPRESA['nome']}\n"
-        f"🏦 *Banco:* {EMPRESA['banco']}\n"
-        f"🏦 *Agência:* {EMPRESA['agencia']}\n"
-        f"💳 *Conta:* {EMPRESA['conta']}\n\n"
+        f"📱 *Copia e Cola:*\n"
+        f"`{copia_cola}`\n\n"
         f"📝 *Como pagar:*\n"
-        f"1️⃣ Copie a chave PIX acima\n"
+        f"1️⃣ Copie o código acima ou escaneie o QR Code\n"
         f"2️⃣ Abra o app do seu banco\n"
-        f"3️⃣ Cole a chave e confirme o valor\n"
-        f"4️⃣ Após pagar, clique em *'✅ Já Paguei'*\n\n"
-        f"⏳ *Aguardando pagamento...*"
+        f"3️⃣ Confirme o valor e finalize o pagamento\n\n"
+        f"⏳ O sistema aprovará automaticamente em instantes!"
     )
 
-    await context.bot.send_message(
-        chat_id=update.callback_query.message.chat_id,
-        text=text,
-        parse_mode=ParseMode.MARKDOWN,
-        reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("✅ Já Paguei", callback_data=f"confirm_payment_{codigo_pedido}")],
-            [InlineKeyboardButton("❌ Cancelar", callback_data="main_menu")]
-        ])
-    )
+    botoes = [
+        [InlineKeyboardButton("✅ Já Paguei (Forçar Baixa)", callback_data=f"confirm_payment_{codigo_pedido}")],
+        [InlineKeyboardButton("❌ Cancelar", callback_data="main_menu")]
+    ]
+
+    if pix_data.get("buffer"):
+        await context.bot.send_photo(
+            chat_id=user_id,
+            photo=pix_data["buffer"],
+            caption=text,
+            parse_mode=ParseMode.MARKDOWN,
+            reply_markup=InlineKeyboardMarkup(botoes)
+        )
+    else:
+        await context.bot.send_message(
+            chat_id=user_id,
+            text=text,
+            parse_mode=ParseMode.MARKDOWN,
+            reply_markup=InlineKeyboardMarkup(botoes)
+        )
 
 async def confirm_payment(update, context, codigo_pedido):
     """Confirma pagamento e libera download"""
@@ -1279,6 +1297,52 @@ def start_health_check_server(port):
         print(f"⚠️ Servidor HTTP: {e}")
 
 # ============================================================
+# WEBHOOK CALLBACK (APROVAÇÃO AUTOMÁTICA)
+# ============================================================
+
+@payments.on_payment_confirmed
+async def on_webhook_payment(codigo_pedido: str, payload: dict):
+    """Chamado automaticamente pelo payments.py quando o gateway aprovar o PIX"""
+    pedido = db.carregar_pedido(codigo_pedido)
+    if not pedido or pedido["status"] == "aprovado":
+        return
+
+    # Usa a mesma lógica de aprovação manual para reuso
+    link_download = gerar_link_download(codigo_pedido)
+    expira = (datetime.now() + timedelta(hours=DOWNLOAD_EXPIRY_HOURS)).strftime("%d/%m/%Y %H:%M")
+    db.update_pedido(codigo_pedido, "aprovado", link_download=link_download)
+    
+    user_id = pedido["user_id"]
+    nome_cliente = pedido.get("cliente", {}).get("nome", "Cliente")
+
+    msg = (
+        f"🎉 *DOWNLOAD LIBERADO (Aprovação Automática)!\n\n"
+        f"Olá, *{nome_cliente}*! 🚀\n"
+        f"✅ Seu pagamento foi *confirmado automaticamente*!\n"
+        f"📋 *Código:* `{codigo_pedido}`\n"
+        f"💰 *Total:* R$ {pedido['total']:.2f}\n\n"
+        f"⬇️ *Clique no link abaixo para baixar:*\n"
+        f"🔗 `{link_download}`\n\n"
+        f"⏳ *Link válido até:* {expira}\n\n"
+        f"🔒 *Download 100% seguro*"
+    )
+
+    if global_bot:
+        try:
+            await global_bot.send_message(
+                chat_id=user_id,
+                text=msg,
+                parse_mode=ParseMode.MARKDOWN,
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("⬇️ Baixar Agora", url=link_download)],
+                    [InlineKeyboardButton("💬 Suporte", callback_data="support")],
+                    [InlineKeyboardButton("🏠 Menu", callback_data="main_menu")]
+                ])
+            )
+        except Exception as e:
+            logger.error(f"Erro ao enviar msg auto de pagamento: {e}")
+
+# ============================================================
 # MAIN - PONTO DE ENTRADA
 # ============================================================
 
@@ -1300,6 +1364,9 @@ def main():
 
     # Cria a aplicação
     app = Application.builder().token(TOKEN).build()
+    
+    global global_bot
+    global_bot = app.bot
 
     # ===== COMANDOS =====
     app.add_handler(CommandHandler("start", start))

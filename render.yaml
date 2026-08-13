@@ -8,7 +8,9 @@ services:
     healthCheckPath: /health
     envVars:
       - key: PAYMENT_PROVIDER
-        value: manual
+        value: syncpay
+      - key: SYNCPAY_TOKEN
+        value: SEU_TOKEN_DA_SYNC_PAY
       - key: WEBHOOK_PATH
         value: /webhook/pix
       - key: AUTO_APPROVE_ON_PAID
