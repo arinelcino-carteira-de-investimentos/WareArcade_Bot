@@ -1275,7 +1275,7 @@ async def button(update, context):
 # SERVIDORES E HEALTH CHECK PARA O RENDER
 # ============================================================
 
-import threading
+from payments import start_webhook_server
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
 class HealthCheckHandler(BaseHTTPRequestHandler):
@@ -1362,6 +1362,10 @@ def main():
     t = threading.Thread(target=start_health_check_server, args=(PORT,), daemon=True)
     t.start()
 
+    # Inicia o servidor de webhook de pagamentos (Sync Pay) em background
+    loop = asyncio.get_event_loop()
+    loop.create_task(start_webhook_server())
+    
     # Cria a aplicação
     app = Application.builder().token(TOKEN).build()
     
@@ -1384,6 +1388,7 @@ def main():
 
     # ===== MODO DE EXECUÇÃO =====
     if WEBHOOK_URL:
+        # Configura webhook do Telegram
         print(f"✅ Webhook configurado: {WEBHOOK_URL}/webhook na porta {PORT}")
         app.run_webhook(
             listen="0.0.0.0",

@@ -1,47 +1,70 @@
 # -*- coding: utf-8 -*-
 """
-WareArcadeBot - Camada de persistência em SQLite
-Salva cadastros, carrinhos e pedidos. Thread/async-safe via lock.
+WareArcadeBot - Camada de persistência em PostgreSQL (Neon)
+Salva cadastros, carrinhos e pedidos. Thread/async-safe via pool.
+Migrado de SQLite para Neon PostgreSQL para persistência na nuvem.
 """
-import sqlite3
+import os
 import json
 import threading
-import os
+import logging
 from datetime import datetime
 from contextlib import contextmanager
 
-DB_PATH = os.getenv("DB_PATH", "warearcade.db")
+import psycopg2
+import psycopg2.extras
+from psycopg2 import pool
+
+logger = logging.getLogger(__name__)
+
+# ===================== CONEXÃO =====================
+DATABASE_URL = os.getenv("DATABASE_URL", "")
+
+if not DATABASE_URL:
+    logger.critical("❌ DATABASE_URL não configurada! Defina no .env ou variáveis de ambiente.")
+
+_pool = None
 _lock = threading.RLock()
 
 
-def _connect():
-    conn = sqlite3.connect(DB_PATH, check_same_thread=False, timeout=10)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA journal_mode=WAL;")
-    conn.execute("PRAGMA foreign_keys=ON;")
-    return conn
+def _get_pool():
+    """Cria o pool de conexões sob demanda (lazy init)."""
+    global _pool
+    if _pool is None:
+        with _lock:
+            if _pool is None:
+                _pool = psycopg2.pool.ThreadedConnectionPool(
+                    minconn=1,
+                    maxconn=5,
+                    dsn=DATABASE_URL,
+                )
+                logger.info("🟢 Pool de conexões Neon PostgreSQL criado.")
+    return _pool
 
 
 @contextmanager
 def get_conn():
-    with _lock:
-        conn = _connect()
-        try:
-            yield conn
-            conn.commit()
-        except Exception:
-            conn.rollback()
-            raise
-        finally:
-            conn.close()
+    """Obtém uma conexão do pool, faz commit/rollback automático."""
+    p = _get_pool()
+    conn = p.getconn()
+    try:
+        yield conn
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        p.putconn(conn)
 
 
+# ===================== INIT =====================
 def init_db():
-    """Cria as tabelas se não existirem."""
+    """Cria as tabelas se não existirem no Neon PostgreSQL."""
     with get_conn() as conn:
-        conn.executescript("""
+        cur = conn.cursor()
+        cur.execute("""
         CREATE TABLE IF NOT EXISTS cadastros (
-            user_id INTEGER PRIMARY KEY,
+            user_id BIGINT PRIMARY KEY,
             nome TEXT NOT NULL,
             email TEXT NOT NULL,
             whatsapp TEXT NOT NULL,
@@ -51,7 +74,7 @@ def init_db():
 
         CREATE TABLE IF NOT EXISTS pedidos (
             codigo TEXT PRIMARY KEY,
-            user_id INTEGER NOT NULL,
+            user_id BIGINT NOT NULL,
             itens TEXT NOT NULL,
             total REAL NOT NULL,
             metodo TEXT NOT NULL,
@@ -67,16 +90,19 @@ def init_db():
             confirmed_at TEXT,
             approved_at TEXT
         );
+
         CREATE INDEX IF NOT EXISTS idx_pedidos_user ON pedidos(user_id);
         CREATE INDEX IF NOT EXISTS idx_pedidos_status ON pedidos(status);
 
         CREATE TABLE IF NOT EXISTS carrinhos (
-            user_id INTEGER NOT NULL,
+            id SERIAL PRIMARY KEY,
+            user_id BIGINT NOT NULL,
             game_id INTEGER NOT NULL,
             nome TEXT NOT NULL,
             preco REAL NOT NULL,
             added_at TEXT NOT NULL
         );
+
         CREATE INDEX IF NOT EXISTS idx_carrinho_user ON carrinhos(user_id);
 
         CREATE TABLE IF NOT EXISTS ordem_counter (
@@ -85,19 +111,21 @@ def init_db():
         );
         """)
         # Garante contador
-        cur = conn.execute("SELECT valor FROM ordem_counter WHERE id = 1")
+        cur.execute("SELECT valor FROM ordem_counter WHERE id = 1")
         if cur.fetchone() is None:
-            conn.execute("INSERT INTO ordem_counter(id, valor) VALUES (1, ?)",
-                         (_proximo_numero_inicial(),))
+            prox = _proximo_numero_inicial()
+            cur.execute("INSERT INTO ordem_counter(id, valor) VALUES (1, %s)", (prox,))
+        conn.commit()
+    logger.info("✅ Banco Neon PostgreSQL inicializado com sucesso.")
 
 
 def _proximo_numero_inicial():
     """Tenta continuar a numeração a partir do último pedido no banco."""
     try:
         with get_conn() as conn:
-            row = conn.execute(
-                "SELECT codigo FROM pedidos ORDER BY rowid DESC LIMIT 1"
-            ).fetchone()
+            cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+            cur.execute("SELECT codigo FROM pedidos ORDER BY data DESC LIMIT 1")
+            row = cur.fetchone()
             if row and row["codigo"].startswith("WA-"):
                 try:
                     return int(row["codigo"][3:]) + 1
@@ -111,9 +139,11 @@ def _proximo_numero_inicial():
 # ===================== CONTADOR DE PEDIDOS =====================
 def proximo_codigo_pedido():
     with get_conn() as conn:
-        row = conn.execute("SELECT valor FROM ordem_counter WHERE id = 1").fetchone()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute("SELECT valor FROM ordem_counter WHERE id = 1 FOR UPDATE")
+        row = cur.fetchone()
         valor = row["valor"]
-        conn.execute("UPDATE ordem_counter SET valor = ? WHERE id = 1", (valor + 1,))
+        cur.execute("UPDATE ordem_counter SET valor = %s WHERE id = 1", (valor + 1,))
         return f"WA-{valor:06d}"
 
 
@@ -121,28 +151,30 @@ def proximo_codigo_pedido():
 def salvar_cadastro(user_id, nome, email, whatsapp):
     now = datetime.now().isoformat()
     with get_conn() as conn:
-        existing = conn.execute(
-            "SELECT user_id FROM cadastros WHERE user_id = ?", (user_id,)
-        ).fetchone()
+        cur = conn.cursor()
+        cur.execute("SELECT user_id FROM cadastros WHERE user_id = %s", (user_id,))
+        existing = cur.fetchone()
         if existing:
-            conn.execute(
-                "UPDATE cadastros SET nome=?, email=?, whatsapp=?, updated_at=? WHERE user_id=?",
+            cur.execute(
+                "UPDATE cadastros SET nome=%s, email=%s, whatsapp=%s, updated_at=%s WHERE user_id=%s",
                 (nome, email, whatsapp, now, user_id),
             )
         else:
-            conn.execute(
+            cur.execute(
                 "INSERT INTO cadastros(user_id, nome, email, whatsapp, created_at, updated_at) "
-                "VALUES (?,?,?,?,?,?)",
+                "VALUES (%s,%s,%s,%s,%s,%s)",
                 (user_id, nome, email, whatsapp, now, now),
             )
 
 
 def carregar_cadastro(user_id):
     with get_conn() as conn:
-        row = conn.execute(
-            "SELECT nome, email, whatsapp FROM cadastros WHERE user_id = ?",
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute(
+            "SELECT nome, email, whatsapp FROM cadastros WHERE user_id = %s",
             (user_id,),
-        ).fetchone()
+        )
+        row = cur.fetchone()
         if not row:
             return None
         return {"nome": row["nome"], "email": row["email"], "whatsapp": row["whatsapp"]}
@@ -152,34 +184,40 @@ def carregar_cadastro(user_id):
 def adicionar_carrinho(user_id, game_id, nome, preco):
     now = datetime.now().isoformat()
     with get_conn() as conn:
-        conn.execute(
-            "INSERT INTO carrinhos(user_id, game_id, nome, preco, added_at) VALUES (?,?,?,?,?)",
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO carrinhos(user_id, game_id, nome, preco, added_at) VALUES (%s,%s,%s,%s,%s)",
             (user_id, game_id, nome, preco, now),
         )
 
 
 def remover_item_carrinho(user_id, idx):
     with get_conn() as conn:
-        rows = conn.execute(
-            "SELECT rowid FROM carrinhos WHERE user_id = ? ORDER BY added_at ASC, rowid ASC",
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute(
+            "SELECT id FROM carrinhos WHERE user_id = %s ORDER BY added_at ASC, id ASC",
             (user_id,),
-        ).fetchall()
+        )
+        rows = cur.fetchall()
         if 0 <= idx < len(rows):
-            conn.execute("DELETE FROM carrinhos WHERE rowid = ?", (rows[idx]["rowid"],))
+            cur.execute("DELETE FROM carrinhos WHERE id = %s", (rows[idx]["id"],))
 
 
 def limpar_carrinho(user_id):
     with get_conn() as conn:
-        conn.execute("DELETE FROM carrinhos WHERE user_id = ?", (user_id,))
+        cur = conn.cursor()
+        cur.execute("DELETE FROM carrinhos WHERE user_id = %s", (user_id,))
 
 
 def carregar_carrinho(user_id):
     with get_conn() as conn:
-        rows = conn.execute(
-            "SELECT game_id, nome, preco FROM carrinhos WHERE user_id = ? "
-            "ORDER BY added_at ASC, rowid ASC",
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute(
+            "SELECT game_id, nome, preco FROM carrinhos WHERE user_id = %s "
+            "ORDER BY added_at ASC, id ASC",
             (user_id,),
-        ).fetchall()
+        )
+        rows = cur.fetchall()
         return [{"id": r["game_id"], "nome": r["nome"], "preco": r["preco"]} for r in rows]
 
 
@@ -188,47 +226,58 @@ def salvar_pedido(pedido):
     now = datetime.now().isoformat()
     cliente = pedido.get("cliente", {})
     with get_conn() as conn:
-        conn.execute(
-            "INSERT OR REPLACE INTO pedidos("
-            "codigo, user_id, itens, total, metodo, status, data, link_download,"
-            "cliente_nome, cliente_email, cliente_whatsapp, pagamento_id,"
-            "qr_code, qr_code_copia_cola, confirmed_at, approved_at"
-            ") VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-            (
-                pedido["codigo"],
-                pedido["user_id"],
-                json.dumps(pedido.get("itens", []), ensure_ascii=False),
-                pedido["total"],
-                pedido.get("metodo", "pix"),
-                pedido.get("status", "pendente"),
-                pedido.get("data", now),
-                pedido.get("link_download"),
-                cliente.get("nome"),
-                cliente.get("email"),
-                cliente.get("whatsapp"),
-                pedido.get("pagamento_id"),
-                pedido.get("qr_code"),
-                pedido.get("qr_code_copia_cola"),
-                pedido.get("confirmed_at"),
-                pedido.get("approved_at"),
-            ),
-        )
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO pedidos(
+                codigo, user_id, itens, total, metodo, status, data, link_download,
+                cliente_nome, cliente_email, cliente_whatsapp, pagamento_id,
+                qr_code, qr_code_copia_cola, confirmed_at, approved_at
+            ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            ON CONFLICT (codigo) DO UPDATE SET
+                user_id=EXCLUDED.user_id, itens=EXCLUDED.itens, total=EXCLUDED.total,
+                metodo=EXCLUDED.metodo, status=EXCLUDED.status, data=EXCLUDED.data,
+                link_download=EXCLUDED.link_download, cliente_nome=EXCLUDED.cliente_nome,
+                cliente_email=EXCLUDED.cliente_email, cliente_whatsapp=EXCLUDED.cliente_whatsapp,
+                pagamento_id=EXCLUDED.pagamento_id, qr_code=EXCLUDED.qr_code,
+                qr_code_copia_cola=EXCLUDED.qr_code_copia_cola,
+                confirmed_at=EXCLUDED.confirmed_at, approved_at=EXCLUDED.approved_at
+        """, (
+            pedido["codigo"],
+            pedido["user_id"],
+            json.dumps(pedido.get("itens", []), ensure_ascii=False),
+            pedido["total"],
+            pedido.get("metodo", "pix"),
+            pedido.get("status", "pendente"),
+            pedido.get("data", now),
+            pedido.get("link_download"),
+            cliente.get("nome"),
+            cliente.get("email"),
+            cliente.get("whatsapp"),
+            pedido.get("pagamento_id"),
+            pedido.get("qr_code"),
+            pedido.get("qr_code_copia_cola"),
+            pedido.get("confirmed_at"),
+            pedido.get("approved_at"),
+        ))
 
 
 def atualizar_status_pedido(codigo, status, **extra):
     with get_conn() as conn:
-        sets = ["status = ?"]
+        cur = conn.cursor()
+        sets = ["status = %s"]
         vals = [status]
         for k, v in extra.items():
-            sets.append(f"{k} = ?")
+            sets.append(f"{k} = %s")
             vals.append(v)
         vals.append(codigo)
-        conn.execute(f"UPDATE pedidos SET {', '.join(sets)} WHERE codigo = ?", vals)
+        cur.execute(f"UPDATE pedidos SET {', '.join(sets)} WHERE codigo = %s", vals)
 
 
 def carregar_pedido(codigo):
     with get_conn() as conn:
-        row = conn.execute("SELECT * FROM pedidos WHERE codigo = ?", (codigo,)).fetchone()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute("SELECT * FROM pedidos WHERE codigo = %s", (codigo,))
+        row = cur.fetchone()
         if not row:
             return None
         return _row_to_pedido(row)
@@ -236,20 +285,24 @@ def carregar_pedido(codigo):
 
 def listar_pedidos_por_status(*statuses):
     with get_conn() as conn:
-        qmarks = ",".join("?" * len(statuses))
-        rows = conn.execute(
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        qmarks = ",".join(["%s"] * len(statuses))
+        cur.execute(
             f"SELECT * FROM pedidos WHERE status IN ({qmarks}) ORDER BY data ASC",
             statuses,
-        ).fetchall()
+        )
+        rows = cur.fetchall()
         return [_row_to_pedido(r) for r in rows]
 
 
 def listar_pedidos_usuario(user_id, limit=5):
     with get_conn() as conn:
-        rows = conn.execute(
-            "SELECT * FROM pedidos WHERE user_id = ? ORDER BY rowid DESC LIMIT ?",
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute(
+            "SELECT * FROM pedidos WHERE user_id = %s ORDER BY data DESC LIMIT %s",
             (user_id, limit),
-        ).fetchall()
+        )
+        rows = cur.fetchall()
         return [_row_to_pedido(r) for r in rows]
 
 
@@ -293,16 +346,19 @@ def carregar_tudo_para_memoria():
 
     # Cadastros
     with get_conn() as conn:
-        for row in conn.execute("SELECT user_id, nome, email, whatsapp FROM cadastros"):
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute("SELECT user_id, nome, email, whatsapp FROM cadastros")
+        for row in cur.fetchall():
             cadastros_mem[row["user_id"]] = {
                 "nome": row["nome"], "email": row["email"], "whatsapp": row["whatsapp"],
             }
 
     # Carrinhos (agrupados por user)
-    for uid in {k["user_id"] for k in [
-            dict(r) for r in (
-                sqlite3.connect(DB_PATH).execute(
-                    "SELECT DISTINCT user_id FROM carrinhos").fetchall())]}:
+    with get_conn() as conn:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute("SELECT DISTINCT user_id FROM carrinhos")
+        user_ids = [r["user_id"] for r in cur.fetchall()]
+    for uid in user_ids:
         carrinhos_mem[uid] = carregar_carrinho(uid)
 
     # Pedidos
@@ -311,7 +367,9 @@ def carregar_tudo_para_memoria():
         pedidos_pendentes_mem[p["codigo"]] = p
 
     with get_conn() as conn:
-        rows = conn.execute("SELECT * FROM pedidos").fetchall()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute("SELECT * FROM pedidos")
+        rows = cur.fetchall()
     for r in rows:
         p = _row_to_pedido(r)
         pedidos_mem.setdefault(p["user_id"], []).append(p)

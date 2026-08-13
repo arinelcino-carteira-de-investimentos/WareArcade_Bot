@@ -15,9 +15,5 @@ services:
         value: /webhook/pix
       - key: AUTO_APPROVE_ON_PAID
         value: "1"
-      - key: DB_PATH
-        value: /opt/data/warearcade.db
-    disk:
-      name: data
-      mountPath: /opt/data
-      sizeGB: 1
+      - key: DATABASE_URL
+        value: postgresql://neondb_owner:SUA_SENHA@ep-still-meadow-ackvlhau-pooler.sa-east-1.aws.neon.tech/neondb?sslmode=require
