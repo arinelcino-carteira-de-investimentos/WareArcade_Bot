@@ -1368,15 +1368,17 @@ def main():
     print("🚀 Bot iniciado e aguardando mensagens...")
     print("=" * 60)
 
-    # Inicia servidor HTTP em background para responder ao Render health check
-    t = threading.Thread(target=start_health_check_server, args=(PORT,), daemon=True)
-    t.start()
+    # Inicia o servidor de webhook/health check em background numa thread dedicada (compatível com Python 3.14+)
+    def _run_webhook_thread():
+        loop_wh = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop_wh)
+        loop_wh.run_until_complete(start_webhook_server())
+        loop_wh.run_forever()
 
-    # Inicia o servidor de webhook de pagamentos (Sync Pay) em background
-    loop = asyncio.get_event_loop()
-    loop.create_task(start_webhook_server())
-    
-    # Cria a aplicação
+    t_wh = threading.Thread(target=_run_webhook_thread, daemon=True)
+    t_wh.start()
+
+    # Cria a aplicação do Telegram
     app = Application.builder().token(TOKEN).build()
     
     global global_bot
@@ -1408,11 +1410,6 @@ def main():
         )
     else:
         print("📡 Modo Polling (desenvolvimento/produção contínua)")
-        
-        # Cria um novo event loop para evitar erros em Python 3.14+
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        
         app.run_polling()
 
 # ===== ENTRY POINT =====
