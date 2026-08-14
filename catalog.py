@@ -12,7 +12,14 @@ Imagens REAIS de todos os produtos:
 - IA/IA Knights: logos das ferramentas
 ===============================================
 """
-import os, re, unicodedata
+import os, re, unicodedata, sys, io
+
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+        sys.stderr.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
 
 def _norm(s):
     """Remove acentos e normaliza para matching case-insensitive."""

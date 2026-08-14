@@ -8,8 +8,18 @@ Versão: 4.0 - COMPLETA E CORRIGIDA
 
 import os
 import sys
+import io
+
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+        sys.stderr.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
+
 import logging
 import asyncio
+import threading
 import math
 import uuid
 import hashlib
