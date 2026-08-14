@@ -1399,22 +1399,30 @@ def main():
     app.add_handler(CommandHandler("liberar", cmd_liberar))
 
     # ===== MODO DE EXECUÇÃO =====
-    if WEBHOOK_URL:
-        # Configura webhook do Telegram
-        print(f"✅ Webhook configurado: {WEBHOOK_URL}/webhook na porta {PORT}")
-        app.run_webhook(
-            listen="0.0.0.0",
-            port=PORT,
-            url_path="webhook",
-            webhook_url=f"{WEBHOOK_URL}/webhook"
-        )
-    else:
-        print("📡 Modo Polling (desenvolvimento/produção contínua)")
+    try:
+        if WEBHOOK_URL and os.getenv("RENDER"):
+            print(f"✅ Webhook configurado: {WEBHOOK_URL}/webhook na porta {PORT}")
+            app.run_webhook(
+                listen="0.0.0.0",
+                port=PORT,
+                url_path="webhook",
+                webhook_url=f"{WEBHOOK_URL}/webhook"
+            )
+        else:
+            print("📡 Modo Polling (Desenvolvimento Local)")
+            app.run_polling()
+    except Exception as err:
+        print(f"⚠️ Alternando para modo Polling local: {err}")
         app.run_polling()
 
 # ===== ENTRY POINT =====
 if __name__ == "__main__":
     try:
+        try:
+            asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
         main()
     except KeyboardInterrupt:
         print("\n🛑 Bot parado pelo usuário.")
@@ -1423,3 +1431,4 @@ if __name__ == "__main__":
         import traceback
         traceback.print_exc()
         sys.exit(1)
+
